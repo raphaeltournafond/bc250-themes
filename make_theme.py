@@ -1,6 +1,6 @@
 # BC-250 theme generator for turing-smart-screen-python: renders the artwork and writes theme.yaml of one theme
 # from a single layout, so static art and live widgets always line up.
-#     python3 make_theme.py --app ~/turing-smart-screen-python [--theme phosphor|gameboy|retrowave|videotex|mission|minecraft|nixie|radar] [--portrait] [...]
+#     python3 make_theme.py --app ~/turing-smart-screen-python [--theme phosphor|gameboy|retrowave|videotex|mission|minecraft|nixie|radar|halloween] [--portrait] [...]
 #     python3 make_theme.py --help
 # The theme is written to <app>/res/themes/BC250-<Theme> (fonts are read from <app>/res/fonts).
 #
@@ -90,6 +90,11 @@ SKINS = {
     "radar": dict(folder="BC250-Radar", bg=(2, 9, 4), dim=(50, 120, 70), mid=(90, 190, 110), value=(200, 255, 210),
                   accent=(230, 255, 120), cold=(120, 255, 140), hot=(255, 190, 60), alert=(255, 70, 60), ink=(2, 9, 4),
                   grid_dot=(14, 70, 28), palette=None),
+    # Halloween: pumpkin-orange labels and bone-white values on a purple night, ectoplasm green, heat going
+    # slime green -> pumpkin -> blood red
+    "halloween": dict(folder="BC250-Halloween", bg=(10, 6, 14), dim=(84, 48, 104), mid=(255, 122, 24),
+                      value=(238, 230, 206), accent=(150, 235, 70), cold=(150, 235, 70), hot=(255, 122, 24),
+                      alert=(236, 24, 40), ink=(10, 6, 14), grid_dot=(40, 24, 52), bar=(255, 122, 24), palette=None),
 }
 SKIN_NAME = "phosphor"
 SKIN = SKINS[SKIN_NAME]
@@ -202,8 +207,8 @@ def set_layout(portrait: bool, skin: str = "phosphor"):
     global PROMPT_Y, PROMPT_LABEL_BL, PROMPT_VALUE_BL, PROMPT_COLS_BL, PROMPT_X, PROMPT_XR, PROMPT_AREA
     global PROMPT_COL1_XR, PROMPT_COLS, SPLASH_LAYOUT, RADAR
     PORTRAIT, SKIN_NAME, SKIN = portrait, skin, SKINS[skin]
-    gameboy, retro, videotex, mission, blocky, nixie, radar = (skin == name for name in (
-        "gameboy", "retrowave", "videotex", "mission", "minecraft", "nixie", "radar"))
+    gameboy, retro, videotex, mission, blocky, nixie, radar, haunted = (skin == name for name in (
+        "gameboy", "retrowave", "videotex", "mission", "minecraft", "nixie", "radar", "halloween"))
     card = gameboy_card if gameboy else (lambda *box: phosphor_panel(*box, col_a_offset=130 if portrait else 100))
     if not portrait:  # 480x320: CPU and GPU side by side, 3x2 grid, one-line prompt
         W, H = 480, 320
@@ -251,6 +256,12 @@ def set_layout(portrait: bool, skin: str = "phosphor"):
                 logo_center=(240, 46), logo_max_w=330, splash_at=(404, 62), panel=(30, 90, 450, 254),
                 title_bl=106, row_bl=127, row_step=17, label_x=44, value_x=104, status_xr=436,
                 progress_bl=272, bar=(140, 280, 200, 6), status_bl=272, footer_bl=313)
+        if haunted:  # a graveyard under the moon with the dripping logo, the seance below, two jack-o'-lanterns
+            SPLASH_LAYOUT = dict(
+                horizon=112, moon=(410, 40, 24), logo_center=(196, 52), logo_max_w=300, panel=(24, 120, 456, 268),
+                title_bl=137, row_bl=156, row_step=15, label_x=36, value_x=110, status_xr=444,
+                progress_bl=287, caption=(120, 360), bar=(150, 295, 180, 6), status_bl=287,
+                pumpkins=((50, 293, 17), (430, 293, 17)))
     else:  # 320x480: panels stacked, 2x3 grid, prompt with its values on a row of their own
         W, H = 320, 480
         DATE_XR = None  # no room for the date in the header
@@ -297,6 +308,12 @@ def set_layout(portrait: bool, skin: str = "phosphor"):
                 logo_center=(160, 52), logo_max_w=290, splash_at=(240, 92), panel=(10, 116, 310, 322),
                 title_bl=133, row_bl=158, row_step=24, label_x=22, value_x=82, status_xr=298,
                 progress_bl=356, bar=(60, 366, 200, 6), status_bl=356, footer_bl=470)
+        if haunted:
+            SPLASH_LAYOUT = dict(
+                horizon=150, moon=(276, 32, 18), logo_center=(150, 84), logo_max_w=250, panel=(10, 160, 310, 384),
+                title_bl=178, row_bl=202, row_step=24, label_x=22, value_x=82, status_xr=298,
+                progress_bl=410, caption=(40, 280), bar=(70, 420, 180, 6), status_bl=410,
+                pumpkins=((42, 452, 19), (278, 452, 19)))
     if nixie:  # the tubes are laid out by nixie_layout(); this is the boot screen
         SPLASH_LAYOUT = nixie_splash_layout(portrait)
         tw, th = SPLASH_LAYOUT["tube"]
@@ -346,6 +363,8 @@ def set_layout(portrait: bool, skin: str = "phosphor"):
     SPLASH_LAYOUT["value_chars"] = (SPLASH_LAYOUT["status_xr"] - 6 * CH[S] - 8 - SPLASH_LAYOUT["value_x"]) // CH[S]
     if mission:  # the status is a lamp, wider than a word
         SPLASH_LAYOUT["value_chars"] -= 3
+    if haunted:  # STIRRING and BURNING are longer than OK
+        SPLASH_LAYOUT["value_chars"] -= 2
 
 
 set_layout(portrait=False)
@@ -426,6 +445,8 @@ def heat_widget(p):
         widget["HEAT_GRAPH"]["STYLE"] = "mosaic"
     if SKIN_NAME == "mission":
         widget["ALERT_TAG"]["TEXT"] = "ALARM"
+    if SKIN_NAME == "halloween":
+        widget["ALERT_TAG"]["TEXT"] = "BOO!"
     if SKIN_NAME == "minecraft":  # history as a column of little blocks
         widget["HEAT_GRAPH"].update({"STYLE": "blocks", "BLOCK": [6, 6]})
     return widget
@@ -507,6 +528,12 @@ NIXIE_WORDS = {"boot": "WARMING UP", "now-playing": "NOW PLAYING", "downloading"
                "last-session": "LAST GAME", "idle": "STANDBY", "idle-text": "170 V standing by"}
 
 
+# Halloween status line wording ("HAUNTING Hades II"; idle: "SLUMBERING" / "the crypt is quiet")
+HALLOWEEN_WORDS = {"boot": "RISING", "now-playing": "HAUNTING", "downloading": "SUMMONING", "installing": "CONJURING",
+                   "verifying": "EXORCISING", "fossilize_replay": "BREWING SHADERS", "last-session": "LAST HAUNT",
+                   "idle": "SLUMBERING", "idle-text": "the crypt is quiet"}
+
+
 # Radar status line wording
 RADAR_WORDS = {"boot": "STARTING", "now-playing": "NOW PLAYING", "downloading": "DOWNLOADING", "installing": "INSTALLING",
                "verifying": "VERIFYING", "fossilize_replay": "SHADERS", "last-session": "LAST GAME", "idle": "STANDBY",
@@ -521,7 +548,7 @@ def videotex_code(logo):
 def prompt_prefix(user, prompt):
     """What precedes the live command word in the prompt's label row."""
     return {"gameboy": user.upper(), "retrowave": f"1UP {user.upper()}", "videotex": "", "mission": "",
-            "minecraft": "", "nixie": "", "radar": ""}.get(SKIN_NAME, prompt)
+            "minecraft": "", "nixie": "", "radar": "", "halloween": ""}.get(SKIN_NAME, prompt)
 
 
 def build_theme(title, prompt, user):
@@ -529,8 +556,11 @@ def build_theme(title, prompt, user):
     net_spark = dict(max_value=10_000_000_000, autoscale=True)
     ram, ssd, pwr, rx, tx, ping = (cells[k] for k in ("ram", "ssd", "pwr", "rx", "tx", "ping"))
     sl = SPLASH_LAYOUT
-    header_ink = SKIN["value"] if SKIN_NAME in ("gameboy", "videotex", "mission") else SKIN["ink"]  # minecraft: white
+    on_dark = ("gameboy", "videotex", "mission", "halloween")
+    header_ink = SKIN["value"] if SKIN_NAME in on_dark else SKIN["ink"]  # minecraft: white
     clock_ink = SKIN["accent"] if SKIN_NAME in ("videotex", "mission") else header_ink  # the time in yellow / amber
+    if SKIN_NAME == "halloween":
+        clock_ink = SKIN["mid"]  # pumpkin
     date = {"INTERVAL": 1}
     if DATE_XR:
         day_format = "'DAY' DDD" if SKIN_NAME == "mission" else "EEE dd MMM"  # mission clocks: day of the year
@@ -558,6 +588,9 @@ def build_theme(title, prompt, user):
         prompt_spec.update({"CMD_WORDS": dict(MINECRAFT_WORDS, **{"idle-text": f"{user} is AFK"}),
                             "BRIGHT": rgb((255, 255, 255)), "LABEL_COLOR": rgb((255, 255, 85)),
                             "COL_WORDS": {"SESSION": "PLAYTIME", "TIME": "PLAYTIME"}})
+    if SKIN_NAME == "halloween":  # a seance is a session too
+        prompt_spec.update({"CMD_WORDS": HALLOWEEN_WORDS, "LABEL_COLOR": rgb(SKIN["mid"]),
+                            "COL_WORDS": {"SESSION": "SEANCE", "TIME": "SEANCE"}})
     if SKIN_NAME == "mission":
         prompt_spec.update({"CMD_WORDS": MISSION_WORDS, "LABEL_COLOR": rgb(SKIN["accent"]),
                             "COL_WORDS": {"SESSION": "FLT TIME", "TIME": "FLT TIME", "PEAK C/G": "PEAK THRM"}})
@@ -585,7 +618,7 @@ def build_theme(title, prompt, user):
         "BAR_Y": sl["bar"][1], "BAR_W": sl["bar"][2], "BAR_H": sl["bar"][3],
         "IMAGE_NOLOGO": "splash_nologo.png", "LOGO_TEXT": LOGO,
     }
-    if SKIN_NAME not in ("retrowave", "videotex", "mission", "minecraft", "nixie", "radar"):  # pixel-font logo
+    if SKIN_NAME not in ("retrowave", "videotex", "mission", "minecraft", "nixie", "radar", "halloween"):  # pixel-font logo
         splash.update({"LOGO_SIZE": logo_size(LOGO), "LOGO_BL": logo_baseline(logo_size(LOGO)),
                        "LOGO_BOX": list(sl["logo_box"])})
     if SKIN_NAME == "phosphor":  # the dark tube the warm-up starts from: only the text has to be sent after it
@@ -615,6 +648,11 @@ def build_theme(title, prompt, user):
         splash.update({"STYLE": "minecraft", "SPLASH_TEXTS": MINECRAFT_SPLASHES, "SPLASH_AT": list(sl["splash_at"]),
                        "GREEN": rgb((0, 150, 0)), "TEXT": rgb(SKIN["value"]), "WHITE": rgb((255, 255, 255)),
                        "TITLE_BL": sl["title_bl"]})
+    if SKIN_NAME == "halloween":
+        splash.update({"STYLE": "halloween", "LOGO_BOX": list(HW_REVEAL_BOX), "SKY": [0, 0, W, sl["horizon"]],
+                       "MOON": list(sl["moon"]), "PUMPKINS": [pumpkin_face(*p) for p in sl["pumpkins"]],
+                       "BAT": [list(p) for p in BAT_SHAPE], "TEXT": rgb(SKIN["value"]), "GREEN": rgb(SKIN["accent"]),
+                       "CANDLE": rgb(HW_CANDLE), "SILHOUETTE": rgb(HW_GROUND), "CAPTION": list(sl["caption"])})
     if SKIN_NAME == "mission":
         splash.update({"STYLE": "mission", "IMAGE_BLANK": "splash.png", "GREEN": rgb(SKIN["green"]),
                        "COUNT_BOX": list(sl["count_box"]), "COUNT_BL": sl["count_bl"], "HEAD_BL": sl["head_bl"],
@@ -804,6 +842,17 @@ class Canvas:
             return self.lcd_grid(self.img)
         if SKIN_NAME in ("videotex", "minecraft", "nixie", "radar"):  # flat colours, nothing else
             return self.img
+        if SKIN_NAME == "halloween":  # candle-lit text and dark corners, no scanlines
+            img = ImageChops.add(self.img, self.glow.filter(ImageFilter.GaussianBlur(2)).point(lambda v: int(v * 0.4)))
+            px = img.load()
+            cx, cy = W / 2, H / 2
+            max_r = math.hypot(cx, cy)
+            for y in range(H):
+                for x in range(W):
+                    k = 1.0 - 0.42 * (math.hypot(x - cx, y - cy) / max_r) ** 2.4
+                    r, g, b = px[x, y]
+                    px[x, y] = (int(r * k), int(g * k), int(b * k))
+            return img
         if SKIN_NAME == "mission":  # soft glow of the text, scanlines on the CRT glass only
             img = ImageChops.add(self.img, self.glow.filter(ImageFilter.GaussianBlur(3)).point(lambda v: int(v * 0.45)))
             shade = Image.new("L", (W, H), 255)
@@ -1549,6 +1598,231 @@ def render_splash_minecraft():
 
 
 # ---------------------------------------------------------------------------------------------------------------------
+# Halloween artwork
+# ---------------------------------------------------------------------------------------------------------------------
+HW_BAND = (32, 15, 42)  # the header band: dusk purple, dripping
+HW_SKY_TOP, HW_SKY_LOW = (46, 18, 64), (16, 8, 24)
+HW_MOON, HW_MOON_SHADE = (238, 230, 198), (196, 186, 160)
+HW_GROUND, HW_STONE, HW_STONE_EDGE = (7, 3, 9), (44, 34, 56), (70, 58, 84)
+HW_BLOOD, HW_BLOOD_DARK = (200, 18, 32), (112, 6, 16)
+HW_PUMPKIN, HW_PUMPKIN_RIB, HW_STEM = (236, 108, 18), (150, 58, 8), (74, 112, 40)
+HW_CARVED, HW_CANDLE = (36, 12, 4), (255, 214, 96)  # the face, unlit and lit
+HW_REVEAL_BOX = (0, 0, 1, 1)  # where the logo is (with its drips), set in main: the boot bleeds it in
+# a bat, wings spread, in units of its scale: scalloped wings, two ears
+BAT_SHAPE = ((-8, -2), (-6, -4), (-4, -3), (-2, -4), (-1, -2), (-1, -4), (0, -3), (1, -4), (1, -2), (2, -4),
+             (4, -3), (6, -4), (8, -2), (6, -1), (5, 0), (4, -1), (2, 0), (1, 1), (0, 2), (-1, 1), (-2, 0), (-4, -1),
+             (-5, 0), (-6, -1))
+
+
+def drips(c, x1, x2, y, color, seed, longest=5, skip=None):
+    """Drops hanging from a horizontal edge at y: every few pixels a thin trickle, the longer ones with a drop at the
+    end. `skip` = (xa, xb): leave that stretch dry (a tag sits there)."""
+    rnd = random.Random(seed)
+    x = x1 + rnd.randrange(3, 9)
+    while x < x2 - 3:
+        if not (skip and skip[0] - 2 <= x <= skip[1] + 2):
+            n = rnd.randrange(1, longest + 1)
+            c.d.line((x, y + 1, x, y + n), fill=color)
+            if rnd.random() < 0.4:
+                c.d.line((x + 1, y + 1, x + 1, y + max(1, n - 2)), fill=color)
+            if n >= 3:
+                c.d.rectangle((x, y + n, x + 1, y + n + 1), fill=color)
+        x += rnd.randrange(5, 16)
+
+
+def cobweb(c, x, y, sx, sy, r, color):
+    """A cobweb in a corner (x, y), opening towards (sx, sy): five threads fanning out, joined by sagging rings."""
+    angles = [math.radians(a) for a in (0, 22.5, 45, 67.5, 90)]
+    for a in angles:
+        c.d.line((x, y, x + sx * r * math.cos(a), y + sy * r * math.sin(a)), fill=color)
+    for k in (0.38, 0.68, 0.98):
+        points = [(x + sx * r * k * math.cos(a), y + sy * r * k * math.sin(a)) for a in angles]
+        for (ax, ay), (bx, by) in zip(points, points[1:]):
+            mx, my = (ax + bx) / 2, (ay + by) / 2
+            mx, my = x + (mx - x) * 0.86, y + (my - y) * 0.86  # sagging towards the corner
+            c.d.line((ax, ay, mx, my), fill=color)
+            c.d.line((mx, my, bx, by), fill=color)
+
+
+def bat(draw, cx, cy, scale, color):
+    draw.polygon([(cx + px * scale, cy + py * scale) for px, py in BAT_SHAPE], fill=color)
+
+
+def pumpkin_face(cx, cy, r):
+    """The carved holes of a jack-o'-lantern (eyes, nose, toothy grin) as polygons: the boot fills them with the
+    flickering candle light."""
+    rx, ry = r * 1.2, r
+
+    def poly(*points):
+        return [[round(cx + px * rx), round(cy + py * ry)] for px, py in points]
+    return [poly((-0.62, -0.02), (-0.16, -0.02), (-0.4, -0.46)),  # eyes
+            poly((0.16, -0.02), (0.62, -0.02), (0.4, -0.46)),
+            poly((-0.09, 0.16), (0.09, 0.16), (0, -0.02)),  # nose
+            poly((-0.7, 0.26), (-0.42, 0.36), (-0.32, 0.27), (-0.2, 0.37), (0.2, 0.37), (0.32, 0.27), (0.42, 0.36),
+                 (0.7, 0.26), (0.5, 0.6), (0.2, 0.7), (-0.2, 0.7), (-0.5, 0.6))]  # grin with two teeth
+
+
+def pumpkin(c, cx, cy, r, face=HW_CARVED):
+    """A jack-o'-lantern: ribbed orange body, a stem, the carved face."""
+    rx, ry = r * 1.2, r
+    c.d.rectangle((cx - 2, cy - ry - 5, cx + 2, cy - ry + 2), fill=HW_STEM)
+    c.d.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=HW_PUMPKIN, outline=HW_PUMPKIN_RIB)
+    for k in (0.45, 0.8):  # the ribs
+        c.d.arc((cx - rx * k, cy - ry, cx + rx * k, cy + ry), 100, 260, fill=HW_PUMPKIN_RIB)
+        c.d.arc((cx - rx * k, cy - ry, cx + rx * k, cy + ry), -80, 80, fill=HW_PUMPKIN_RIB)
+    for hole in pumpkin_face(cx, cy, r):
+        c.d.polygon([tuple(p) for p in hole], fill=face)
+
+
+def moon(c, cx, cy, r):
+    """A full moon with a pale halo and a few darker seas."""
+    for i, k in enumerate((0.1, 0.18, 0.28)):
+        rr = r + 9 - 3 * i
+        c.d.ellipse((cx - rr, cy - rr, cx + rr, cy + rr), fill=mix(HW_SKY_TOP, HW_MOON, k))
+    c.d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=HW_MOON)
+    for dx, dy, rr in ((-0.35, -0.2, 0.28), (0.25, 0.3, 0.22), (0.3, -0.38, 0.14), (-0.1, 0.45, 0.12)):
+        x, y, s = cx + dx * r, cy + dy * r, rr * r
+        c.d.ellipse((x - s, y - s, x + s, y + s), fill=HW_MOON_SHADE)
+
+
+def graveyard(c, horizon, seed):
+    """Night sky down to the horizon, then black hills with tombstones, crosses and a dead tree in silhouette."""
+    for y in range(horizon):
+        c.d.line((0, y, W, y), fill=mix(HW_SKY_TOP, HW_SKY_LOW, y / horizon))
+    rnd = random.Random(seed)
+    hills = [(x, horizon - 6 + round(3 * math.sin(x / 37) + 2 * math.sin(x / 13))) for x in range(0, W + 8, 8)]
+    c.d.polygon(hills + [(W, horizon + 2), (0, horizon + 2)], fill=HW_GROUND)
+    c.d.rectangle((0, horizon, W, horizon + 2), fill=HW_GROUND)
+    x = rnd.randrange(4, 20)
+    while x < W - 20:
+        ground = horizon - 6 + round(3 * math.sin(x / 37) + 2 * math.sin(x / 13))
+        kind = rnd.choice(("stone", "stone", "cross", "slab"))
+        h = rnd.randrange(10, 19)
+        if kind == "cross":
+            c.d.rectangle((x + 4, ground - h, x + 6, ground), fill=HW_STONE)
+            c.d.rectangle((x, ground - h + 3, x + 10, ground - h + 5), fill=HW_STONE)
+            x += 18
+        else:
+            w = rnd.randrange(9, 15) if kind == "stone" else rnd.randrange(14, 20)
+            h = h if kind == "stone" else h // 2 + 3
+            top = ground - h
+            c.d.rectangle((x, top + w // 2, x + w, ground), fill=HW_STONE)
+            if kind == "stone":
+                c.d.pieslice((x, top, x + w, top + w), 180, 360, fill=HW_STONE)
+                c.d.arc((x, top, x + w, top + w), 200, 340, fill=HW_STONE_EDGE)
+            else:
+                c.d.rectangle((x, top, x + w, top + w // 2), fill=HW_STONE)
+                c.d.line((x, top, x + w, top), fill=HW_STONE_EDGE)
+            x += w + rnd.randrange(8, 30)
+    # the dead tree, its branches forking twice
+    tx = W // 8 if seed % 2 else W - W // 8
+
+    def branch(x0, y0, angle, length, depth):
+        x1, y1 = x0 + length * math.cos(angle), y0 - length * math.sin(angle)
+        c.d.line((x0, y0, x1, y1), fill=HW_GROUND, width=max(1, depth))
+        if depth > 0:
+            for turn in (-0.45, 0.4):
+                branch(x1, y1, angle + turn + rnd.uniform(-0.15, 0.15), length * 0.68, depth - 1)
+    branch(tx, horizon - 4, math.pi / 2, min(28, horizon // 4), 3)
+
+
+def drip_logo(c, text, center, max_w):
+    """The logo in blood: the pixel font blown up into blocks, a dark edge, and drops running down from it."""
+    mask = Image.new("L", (len(text) * CH[S] + 4, 16), 0)
+    ImageDraw.Draw(mask).text((1, 1), text, font=font(S), fill=255)
+    box = mask.getbbox()
+    if not box:
+        return
+    mask = mask.crop(box)
+    gw, gh = mask.size
+    b = next((v for v in (7, 6, 5, 4, 3, 2) if gw * v + 4 <= max_w), 2)
+    x0, y0 = center[0] - gw * b // 2, center[1] - gh * b // 2
+    on = {(i, j) for j in range(gh) for i in range(gw) if mask.getpixel((i, j)) > 127}
+    for i, j in on:  # the dark edge, down and to the right
+        c.d.rectangle((x0 + i * b + 1, y0 + j * b + 1, x0 + i * b + b, y0 + j * b + b), fill=HW_BLOOD_DARK)
+    for i, j in on:
+        c.d.rectangle((x0 + i * b, y0 + j * b, x0 + i * b + b - 1, y0 + j * b + b - 1), fill=HW_BLOOD)
+    rnd = random.Random(31)
+    for i in range(gw):  # drops run down from the lowest block of a column, now and then
+        low = max((j for (ci, j) in on if ci == i), default=None)
+        if low is None or rnd.random() > 0.42:
+            continue
+        x, y = x0 + i * b + rnd.randrange(0, max(1, b - 2)), y0 + (low + 1) * b
+        n = rnd.randrange(b, 4 * b)
+        wd = max(2, b // 2)
+        c.d.rectangle((x, y, x + wd - 1, y + n), fill=HW_BLOOD)
+        c.d.ellipse((x - 1, y + n - 1, x + wd, y + n + wd), fill=HW_BLOOD)
+
+
+def render_background_halloween(title):
+    c = Canvas()
+    up_x, _, uptime_chars = header_layout(title)
+    c.d.rectangle((0, 0, W, HEADER_H), fill=HW_BAND)
+    drips(c, 0, W, HEADER_H, HW_BAND, seed=13, longest=3)
+    c.label(6, HEADER_BL, title, SKIN["mid"])
+    if uptime_chars:
+        c.label(up_x, HEADER_BL, "UP", SKIN["dim"], glow=False)
+
+    for p, name, subtitle, clk, seed in ((cpu, "CPU", "ZEN2 6C/12T", "CLK GHZ", 1), (gpu, "GPU", "RDNA2 24CU", "CLK MHZ", 2)):
+        x1, y1, x2, y2 = p["box"]
+        tag_end = x1 + 8 + len(name) * CH[S] + 8 + 4 + len(subtitle) * CH[S] + 3
+        drips(c, x1 + 1, x2, y1, SKIN["dim"], seed, skip=(x1 + 6, tag_end))
+        c.frame(p["box"], name, subtitle)
+        cobweb(c, x2 - 1, y1 + 1, -1, 1, 9, SKIN["dim"])
+        c.label(p["col_a"], p["label_bl"], "TEMP")
+        c.label(p["xr"], p["label_bl"], clk, anchor="rs")
+        c.bar_track(*p["bar"])
+        c.graph_grid(*p["graph"])
+        if p["graph"][3] >= 50:
+            c.label(p["xr"] - 2, p["graph"][1] + 10, "°C 60s", SKIN["dim"], anchor="rs", glow=False)
+
+    x1, y1, x2, y2 = GRID
+    drips(c, x1 + 1, x2, y1, SKIN["dim"], 3, skip=(x1 + 6, x1 + 8 + 5 * CH[S] + 12 + 19 * CH[S] + 3))
+    c.frame(GRID, "CRYPT", "MEM / STORAGE / NET")
+    cobweb(c, x2 - 1, y1 + 1, -1, 1, 9, SKIN["dim"])
+    for key, label, sublabel, kind in GRID_LABELS:
+        cl = cells[key]
+        c.label(cl["x0"], cl["label_bl"], label)
+        if sublabel:
+            c.label(cl["xr"], cl["label_bl"], sublabel, SKIN["dim"], anchor="rs", glow=False)
+        if kind == "bar":
+            c.bar_track(*cl["bar"], ticks=False)
+        else:
+            c.graph_grid(*cl["spark"])
+    for col in range(1, len(GRID_COLS)):
+        c.dotted_vline(GRID_COLS[col] - (CELL_GAP + 1) // 2, GRID[1] + 8, GRID[3] - 4)
+
+    c.dotted_hline(4, W - 4, PROMPT_Y)  # the status line, written live by Bc250Prompt
+    return c.finish()
+
+
+def render_splash_halloween(logo=True):
+    """The graveyard, the moon, the bats and the logo above; the seance panel, its bar and the jack-o'-lanterns
+    (unlit) below. The rows, the candle light, the flying bats and the lightning are drawn live."""
+    sl = SPLASH_LAYOUT
+    c = Canvas()
+    graveyard(c, sl["horizon"], seed=7 if PORTRAIT else 8)
+    moon(c, *sl["moon"])
+    mx, my, mr = sl["moon"]
+    bat(c.d, mx - mr - 30, my + 6, 1.5, HW_GROUND)  # two already out, by the moon
+    bat(c.d, mx + mr // 2, my - mr // 3, 1.2, HW_GROUND)
+    if logo:
+        drip_logo(c, LOGO, sl["logo_center"], sl["logo_max_w"])
+    px1, py1, px2, py2 = sl["panel"]
+    drips(c, px1 + 1, px2, py1, SKIN["dim"], 5, longest=6)
+    c.frame(sl["panel"])
+    cobweb(c, px1 + 1, py1 + 1, 1, 1, 12, SKIN["dim"])
+    cobweb(c, px2 - 1, py1 + 1, -1, 1, 12, SKIN["dim"])
+    title = f"Summoning the {SUBTITLE.lower()}..."
+    c.label(sl["label_x"] + 14, sl["title_bl"], title[:(sl["status_xr"] - sl["label_x"] - 28) // CH[S]], SKIN["accent"])
+    x, y, w, h = sl["bar"]
+    c.d.rectangle((x - 2, y - 2, x + w + 1, y + h + 1), outline=SKIN["dim"])
+    for p in sl["pumpkins"]:
+        pumpkin(c, *p)
+    return c.finish()
+
+
+# ---------------------------------------------------------------------------------------------------------------------
 # Nixie artwork and layout
 # ---------------------------------------------------------------------------------------------------------------------
 NIXIE_FONT = "roboto/Roboto-Light.ttf"  # thin, even strokes: the shape of a Nixie cathode
@@ -2097,7 +2371,8 @@ if __name__ == "__main__":
             parser.error("radar: latitude -90..90, longitude -180..180, range 5..400 km")
         RADAR.update(center=center, km=args.radar_range, map=radar_map(*center, args.radar_range))
         RADAR["terrain"] = radar_terrain(*center, args.radar_range, RADAR["scope"][2])
-    title = (args.title or {"videotex": f"P250 {LOGO}", "mission": f"MCC {LOGO}", "radar": f"{LOGO} RADAR"}.get(SKIN_NAME)
+    title = (args.title or {"videotex": f"P250 {LOGO}", "mission": f"MCC {LOGO}", "radar": f"{LOGO} RADAR",
+                            "halloween": f"HAUNTED {LOGO}"}.get(SKIN_NAME)
              or f"{LOGO}::{args.user.upper()}")[:28]
     prompt = f"{args.user}@{args.host}:~$"[:40]
 
@@ -2117,6 +2392,12 @@ if __name__ == "__main__":
     elif SKIN_NAME == "minecraft":
         render_background_minecraft(title).save(THEME_DIR / "background.png")
         render_splash_minecraft().save(THEME_DIR / "splash.png")
+    elif SKIN_NAME == "halloween":
+        render_background_halloween(title).save(THEME_DIR / "background.png")
+        full, nologo = render_splash_halloween(), render_splash_halloween(logo=False)
+        HW_REVEAL_BOX = ImageChops.difference(full, nologo).getbbox() or (0, 0, 1, 1)
+        full.save(THEME_DIR / "splash.png")
+        nologo.save(THEME_DIR / "splash_nologo.png")
     elif SKIN_NAME == "mission":
         render_background_mission(title).save(THEME_DIR / "background.png")
         render_splash_mission().save(THEME_DIR / "splash.png")
@@ -2143,7 +2424,8 @@ if __name__ == "__main__":
              "mission": "BC250-Mission - 1969 mission control console",
              "minecraft": "BC250-Minecraft - blocky inventory screen (fan theme, not affiliated with Mojang)",
              "nixie": "BC250-Nixie - Nixie tube instrument panel",
-             "radar": "BC250-Radar - live aircraft around a point (free community ADS-B data)"}
+             "radar": "BC250-Radar - live aircraft around a point (free community ADS-B data)",
+             "halloween": "BC250-Halloween - pumpkins, cobwebs and a graveyard under the full moon"}
     header = (f"# {names[SKIN_NAME]} for an AMD BC-250 Steam Machine\n"
               f"# Turing 3.5\" {'portrait' if PORTRAIT else 'landscape'}. GENERATED by make_theme.py: "
               "edit the script or its options and re-run it.\n"

@@ -2,24 +2,27 @@
 
 [![tests](https://github.com/raphaeltournafond/bc250-themes/actions/workflows/tests.yml/badge.svg)](https://github.com/raphaeltournafond/bc250-themes/actions/workflows/tests.yml)
 
-Eight themes for [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python), made for a **3.5" Turing screen** (landscape or portrait) on an **AMD BC-250 Steam Machine running Bazzite**. Each has its own boot animation. Pick one with `--theme`:
+Nine themes for [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python), made for a **3.5" Turing screen** (landscape or portrait) on an **AMD BC-250 Steam Machine running Bazzite**. Each has its own boot animation. Pick one with `--theme`:
 
 <table>
   <tr>
-    <td align="center" width="25%"><img src="res/themes/BC250-Phosphor/preview.png" width="200" alt="Phosphor theme"><br><b>Phosphor</b> (default)<br>green CRT terminal</td>
-    <td align="center" width="25%"><img src="res/themes/BC250-GameBoy/preview.png" width="200" alt="Game Boy theme"><br><b>Game Boy</b> <code>gameboy</code><br>handheld RPG status screen</td>
-    <td align="center" width="25%"><img src="res/themes/BC250-Retrowave/preview.png" width="200" alt="Retrowave theme"><br><b>Retrowave</b> <code>retrowave</code><br>neon arcade sunset</td>
-    <td align="center" width="25%"><img src="res/themes/BC250-Videotex/preview.png" width="200" alt="Videotex theme"><br><b>Videotex</b> <code>videotex</code><br>French 40-column videotex</td>
+    <td align="center" width="33%"><img src="res/themes/BC250-Phosphor/preview.png" width="240" alt="Phosphor theme"><br><b>Phosphor</b> (default)<br>green CRT terminal</td>
+    <td align="center" width="33%"><img src="res/themes/BC250-GameBoy/preview.png" width="240" alt="Game Boy theme"><br><b>Game Boy</b> <code>gameboy</code><br>handheld RPG status screen</td>
+    <td align="center" width="33%"><img src="res/themes/BC250-Retrowave/preview.png" width="240" alt="Retrowave theme"><br><b>Retrowave</b> <code>retrowave</code><br>neon arcade sunset</td>
   </tr>
   <tr>
-    <td align="center"><img src="res/themes/BC250-Mission/preview.png" width="200" alt="Mission Control theme"><br><b>Mission Control</b> <code>mission</code><br>1969 flight console</td>
-    <td align="center"><img src="res/themes/BC250-Minecraft/preview.png" width="200" alt="Minecraft theme"><br><b>Minecraft</b> <code>minecraft</code><br>blocky inventory</td>
-    <td align="center"><img src="res/themes/BC250-Nixie/preview.png" width="200" alt="Nixie theme"><br><b>Nixie</b> <code>nixie</code><br>Nixie-tube instrument panel</td>
-    <td align="center"><img src="res/themes/BC250-Radar/preview.png" width="200" alt="Radar theme"><br><b>Radar</b> <code>radar</code><br>live flights around you</td>
+    <td align="center" width="33%"><img src="res/themes/BC250-Videotex/preview.png" width="240" alt="Videotex theme"><br><b>Videotex</b> <code>videotex</code><br>French 40-column videotex</td>
+    <td align="center" width="33%"><img src="res/themes/BC250-Mission/preview.png" width="240" alt="Mission Control theme"><br><b>Mission Control</b> <code>mission</code><br>1969 flight console</td>
+    <td align="center" width="33%"><img src="res/themes/BC250-Minecraft/preview.png" width="240" alt="Minecraft theme"><br><b>Minecraft</b> <code>minecraft</code><br>blocky inventory</td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="res/themes/BC250-Nixie/preview.png" width="240" alt="Nixie theme"><br><b>Nixie</b> <code>nixie</code><br>Nixie-tube instrument panel</td>
+    <td align="center" width="33%"><img src="res/themes/BC250-Radar/preview.png" width="240" alt="Radar theme"><br><b>Radar</b> <code>radar</code><br>live flights around you</td>
+    <td align="center" width="33%"><img src="res/themes/BC250-Halloween/preview.png" width="240" alt="Halloween theme"><br><b>Halloween</b> <code>halloween</code><br>pumpkins, cobwebs, a graveyard</td>
   </tr>
 </table>
 
-Seven of them show the same live data: CPU, GPU, system, and what the machine is playing or downloading. The radar trades some of it for live flights around a point you choose. Portrait layouts, boot animations and details are under [Themes](#themes).
+Eight of them show the same live data: CPU, GPU, system, and what the machine is playing or downloading. The radar trades some of it for live flights around a point you choose. Portrait layouts, boot animations and details are under [Themes](#themes).
 
 ## Quick start
 
@@ -45,7 +48,7 @@ That's it: the screen now starts with the boot animation every time the BC-250 b
 | To… | Run |
 |---|---|
 | update the theme | `git -C bc250-themes pull && bash bc250-themes/setup.sh` |
-| switch theme | `bash bc250-themes/setup.sh --theme gameboy` (or `retrowave`, `videotex`, `mission`, `minecraft`, `nixie`, `radar`, `phosphor`) |
+| switch theme | `bash bc250-themes/setup.sh --theme gameboy` (or `retrowave`, `videotex`, `mission`, `minecraft`, `nixie`, `radar`, `halloween`, `phosphor`) |
 | change an option | `bash bc250-themes/setup.sh --night 23:30-08:00 --logo "MY RIG"` (remembered for next time) |
 | go back to the defaults | `bash bc250-themes/setup.sh --reset-options` |
 | remove it | `bash bc250-themes/setup.sh --uninstall` |
@@ -195,13 +198,29 @@ bash bc250-themes/setup.sh --theme radar --radar-lat 48.8584 --radar-lon 2.2945 
 
 </details>
 
+<details>
+<summary><b>Halloween</b> <code>--theme halloween</code>: pumpkins, cobwebs and a graveyard under the full moon</summary>
+
+<br>
+
+![halloween landscape](res/themes/BC250-Halloween/preview.png) ![halloween portrait](res/themes/BC250-Halloween/preview_portrait.png)
+
+- Pumpkin-orange labels with a candle-like glow and bone-white values on a purple night. The frames and the header melt into drips, and cobwebs hang in the corners. The CPU and GPU panels sit above the CRYPT.
+- The bottom line haunts: "HAUNTING Hades II" with its SEANCE time, "SUMMONING" a download, "BREWING SHADERS", and "the crypt is quiet" when idle.
+- **Boot:** lightning flashes show a graveyard under the full moon, your logo bleeds in from the top in dripping red letters, then the self-test is a séance (ALIVE, STIRRING, CURSED, BURNING) while two jack-o'-lanterns flicker and bats cross the moon. "Raising the dead..." fills its bar, and a last thunderclap: IT'S ALIVE!
+- **Temperatures:** slime green → pumpkin → blood red, and `BOO!` flashes instead of `HOT!`.
+
+![halloween boot](res/themes/BC250-Halloween/splash_preview.gif)
+
+</details>
+
 *Game Boy- and Minecraft-inspired fan themes, not affiliated with or endorsed by Nintendo, Mojang or Microsoft; they use no logos or game assets (all art is drawn by `make_theme.py`). Retrowave's logo uses the Race Space font that comes with the app (free for non-commercial use).*
 
 ## Options
 
 | Option | Default | Effect |
 |---|---|---|
-| `--theme NAME` | `phosphor` | `phosphor` (green terminal), `gameboy` (4-shade RPG status screen), `retrowave` (neon sunset), `videotex` (French videotex pages), `mission` (1969 mission control), `minecraft` (blocky inventory), `nixie` (Nixie tubes) or `radar` (live flights) |
+| `--theme NAME` | `phosphor` | `phosphor` (green terminal), `gameboy` (4-shade RPG status screen), `retrowave` (neon sunset), `videotex` (French videotex pages), `mission` (1969 mission control), `minecraft` (blocky inventory), `nixie` (Nixie tubes), `radar` (live flights) or `halloween` (pumpkins and a graveyard) |
 | `--portrait` | landscape | portrait layout (320×480): panels stacked, 2×3 grid |
 | `--logo TEXT` / `--subtitle TEXT` | `BC-250` / `STEAM MACHINE` | boot splash title and the line under it |
 | `--user NAME` / `--host NAME` | your login / hostname | the `user@host:~$` prompt |

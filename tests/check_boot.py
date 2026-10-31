@@ -35,7 +35,14 @@ def save_gif(frames, path):
             kept.append((t, frame))
             next_t = t + 0.05
     durations = [max(20, round((kept[i + 1][0] - kept[i][0]) * 1000)) for i in range(len(kept) - 1)] + [2000]
-    palette = kept[-1][1].quantize(colors=256)
+    # one palette for all frames, from a few of them across the boot (the last one alone, the dashboard, can lack
+    # the boot's own colours)
+    from PIL import Image
+    samples = [kept[round(k * (len(kept) - 1))][1] for k in (0.3, 0.6, 0.85, 1.0)]
+    montage = Image.new("RGB", (samples[0].width, samples[0].height * len(samples)))
+    for i, frame in enumerate(samples):
+        montage.paste(frame, (0, i * frame.height))
+    palette = montage.quantize(colors=256)
     frames = [frame.quantize(palette=palette, dither=0) for _, frame in kept]
     frames[0].save(path, save_all=True, append_images=frames[1:], duration=durations, loop=0, optimize=True)
 
