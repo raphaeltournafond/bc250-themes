@@ -431,6 +431,15 @@ def heat_widget(p):
     return widget
 
 
+def _needs_quotes(v):
+    """Whether a string would not read back as the same string unquoted: options like --logo and --user end up in
+    theme.yaml, and a text such as "[RIG]", "& CO", "2024" or "~" would otherwise break it or change type."""
+    return (any(c in v for c in ":#\"@'\n\t") or v != v.strip() or v == "" or v[0] in "[]{}&*!|>%`,?-"
+            or v.lower() in ("on", "off", "yes", "no", "true", "false", "null", "~")
+            or re.fullmatch(r"[-+]?(\d[\d_]*(\.\d*)?|\.\d+)([eE][-+]?\d+)?|0x[\da-fA-F_]+|0o[0-7_]+"
+                            r"|[-+]?\.(inf|Inf|INF)|\.(nan|NaN|NAN)", v) is not None)
+
+
 def to_yaml(data, indent=0):
     out = []
     for k, v in data.items():
@@ -440,9 +449,11 @@ def to_yaml(data, indent=0):
             out.append(to_yaml(v, indent + 1))
         elif isinstance(v, bool):
             out.append(f"{pad}{k}: {v}")
-        elif isinstance(v, str) and (any(c in v for c in ":#\"@'") or v != v.strip() or v == ""
-                                     or v.lower() in ("on", "off", "yes", "no", "true", "false", "null")):
-            out.append(f'{pad}{k}: "{v}"' if '"' not in v else f"{pad}{k}: '{v}'")
+        elif isinstance(v, str) and _needs_quotes(v):
+            if '"' not in v and "\\" not in v:
+                out.append(f'{pad}{k}: "{v}"')
+            else:  # single quotes: no escapes inside, a ' is written twice
+                out.append(f"{pad}{k}: '" + v.replace("'", "''") + "'")
         else:
             out.append(f"{pad}{k}: {v}")
     return "\n".join(out)
