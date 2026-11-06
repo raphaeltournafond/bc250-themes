@@ -115,14 +115,14 @@ def mangohud_diagnosis(game_running: bool):
                 print(hint + "  file has no_display: fine for logging, the HUD just stays hidden.")
 
 
-def _radar_spec():
-    """The radar settings of the selected theme, or None when it isn't the radar theme."""
+def _radar_spec(widget="Bc250Radar"):
+    """A data-fed widget's settings in the selected theme, or None when the theme doesn't have it."""
     try:
         import yaml
         with open("config.yaml", encoding="utf-8") as f:
             theme = yaml.safe_load(f)["config"]["THEME"]
         with open(os.path.join("res", "themes", theme, "theme.yaml"), encoding="utf-8") as f:
-            return yaml.safe_load(f)["STATS"]["CUSTOM"].get("Bc250Radar")
+            return yaml.safe_load(f)["STATS"]["CUSTOM"].get(widget)
     except Exception:
         return None
 
@@ -262,6 +262,17 @@ def main():
                 break
             except Exception as e:
                 report(WARN, f"Radar data ({name})", f"no answer ({e}); the radar tries the next source")
+
+    # --- Seismograph theme: can the earthquake feed be fetched? ---
+    seismo = _radar_spec("Bc250Seismograph")
+    if seismo:
+        min_mag = float(seismo.get("MIN_MAG", 2.5))
+        url = b._QuakeFeed.URL.format(tier=b._QuakeFeed.tier(min_mag), span="day")
+        try:
+            report(OK, "Earthquake feed (USGS)", f"{len(b._QuakeFeed._parse(b._QuakeFeed._get(url), min_mag))} quakes of "
+                                                 f"M{min_mag:g} or more in the past day")
+        except Exception as e:
+            report(WARN, "Earthquake feed (USGS)", f"no answer ({e}); the pen keeps writing this machine's own tremor")
 
     # --- Screen serial port + permissions ---
     ports = glob.glob("/dev/ttyACM*") + glob.glob("/dev/ttyUSB*")

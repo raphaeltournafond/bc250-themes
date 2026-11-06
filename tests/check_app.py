@@ -29,6 +29,8 @@ def main():
     extra = argv[argv.index("--") + 1:] if "--" in argv else []
     args = parser.parse_args(argv[:argv.index("--")] if "--" in argv else argv)
     args.extra = extra
+    if args.theme == "seismograph":  # some of the page written in a few seconds, not twenty minutes
+        os.environ["BC250_SEISMO_SPEED"] = "70" if args.screenshot else "300"
     if args.theme == "horror" and not args.screenshot:  # the whole encounter in a few seconds, not ten minutes
         os.environ["BC250_HORROR_FAST"] = "1"
         args.seconds = max(args.seconds, 40)
@@ -84,6 +86,10 @@ def main():
                 # wall-clock smoothness depends on the machine too: shown, and only a gross stall fails
                 ok &= report(worst < 1.0, f"{name}: sweep {len(starts) / seconds:.1f} frames/s, {per_minute:.0f} pauses "
                                           f"over 200 ms a minute, longest {worst * 1000:.0f} ms")
+            if args.theme == "seismograph" and not args.screenshot:
+                ok &= report(b._Seismo.played >= 1 and b._Seismo.rows_started >= 3 and len(b._QuakeFeed.quakes) >= 5,
+                             f"{name}: the pen wrote {b._Seismo.rows_started} lines and played {b._Seismo.played} quake, "
+                             f"{len(b._QuakeFeed.quakes)} on the map")
             if args.theme == "horror" and not args.screenshot:
                 gentle = "--no-jumpscare" in args.extra
                 ok &= report(b._Horror.moves >= 3 and b._Horror.whispers >= 1 and (b._Horror.scares == 0) == gentle,

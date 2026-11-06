@@ -1,6 +1,6 @@
 # BC-250 theme generator for turing-smart-screen-python: renders the artwork and writes theme.yaml of one theme
 # from a single layout, so static art and live widgets always line up.
-#     python3 make_theme.py --app ~/turing-smart-screen-python [--theme phosphor|gameboy|retrowave|videotex|mission|minecraft|nixie|radar|halloween|christmas|horror] [--portrait] [...]
+#     python3 make_theme.py --app ~/turing-smart-screen-python [--theme phosphor|gameboy|retrowave|videotex|mission|minecraft|nixie|radar|halloween|christmas|horror|seismograph] [--portrait] [...]
 #     python3 make_theme.py --help
 # The theme is written to <app>/res/themes/BC250-<Theme> (fonts are read from <app>/res/fonts).
 #
@@ -49,6 +49,8 @@ NIGHT_MODE = "off"  # "off" or "dim"
 SPLASH = True  # boot screen played before the dashboard
 RADAR_LAT, RADAR_LON = 49.0097, 2.5479  # radar theme: centre of the scope (default: Paris CDG airport, a public place)
 RADAR_RANGE = 50  # km
+SEISMO_STATION = None  # seismograph theme: (lat, lon) to show each quake's distance from, kept on the machine
+SEISMO_MIN_MAG = 2.5  # seismograph theme: the smallest quake it records
 
 # --- Colours ----------------------------------------------------------------------------------------------------------
 DMG = [(155, 188, 15), (139, 172, 15), (48, 98, 48), (15, 56, 15)]  # Game Boy DMG: lightest .. darkest
@@ -105,6 +107,10 @@ SKINS = {
     "horror": dict(folder="BC250-Horror", bg=(5, 7, 6), dim=(82, 96, 86), mid=(134, 152, 138), value=(206, 216, 202),
                    accent=(214, 40, 36), cold=(170, 190, 174), hot=(226, 170, 104), alert=(240, 36, 32), ink=(5, 7, 6),
                    grid_dot=(30, 38, 32), bar=(134, 152, 138), palette=None),
+    # Seismograph: an observatory's instrument, dark enamel and brass around a sheet of cream paper
+    "seismograph": dict(folder="BC250-Seismograph", bg=(18, 20, 20), dim=(112, 116, 104), mid=(200, 168, 100),
+                        value=(234, 228, 208), accent=(220, 70, 48), cold=(156, 196, 156), hot=(236, 176, 84),
+                        alert=(240, 54, 44), ink=(18, 20, 20), grid_dot=(40, 44, 42), bar=(200, 168, 100), palette=None),
 }
 SKIN_NAME = "phosphor"
 SKIN = SKINS[SKIN_NAME]
@@ -217,8 +223,9 @@ def set_layout(portrait: bool, skin: str = "phosphor"):
     global PROMPT_Y, PROMPT_LABEL_BL, PROMPT_VALUE_BL, PROMPT_COLS_BL, PROMPT_X, PROMPT_XR, PROMPT_AREA
     global PROMPT_COL1_XR, PROMPT_COLS, SPLASH_LAYOUT, RADAR
     PORTRAIT, SKIN_NAME, SKIN = portrait, skin, SKINS[skin]
-    gameboy, retro, videotex, mission, blocky, nixie, radar, haunted, festive, horror = (skin == name for name in (
-        "gameboy", "retrowave", "videotex", "mission", "minecraft", "nixie", "radar", "halloween", "christmas", "horror"))
+    gameboy, retro, videotex, mission, blocky, nixie, radar, haunted, festive, horror, seismo = (skin == name for name in (
+        "gameboy", "retrowave", "videotex", "mission", "minecraft", "nixie", "radar", "halloween", "christmas", "horror",
+        "seismograph"))
     card = gameboy_card if gameboy else (lambda *box: phosphor_panel(*box, col_a_offset=130 if portrait else 100))
     if not portrait:  # 480x320: CPU and GPU side by side, 3x2 grid, one-line prompt
         W, H = 480, 320
@@ -373,6 +380,12 @@ def set_layout(portrait: bool, skin: str = "phosphor"):
         DATE_XR = None
         SPLASH_LAYOUT = dict(row_bl=64 if not portrait else 84, row_step=16 if not portrait else 22, label_x=14,
                              value_x=86 if not portrait else 74, status_xr=W - 14, progress_bl=0, status_bl=0,
+                             bar=(0, 0, 0, 0))
+    if seismo:  # the sheet of paper on top, the map, the last quake and the readings under it; the boot writes on the paper
+        DATE_XR = None
+        px, py, pw, _ = SEISMO_LAYOUT[portrait]["paper"]
+        SPLASH_LAYOUT = dict(row_bl=py + (24 if portrait else 20), row_step=22 if portrait else 17, label_x=px + 10,
+                             value_x=px + (66 if portrait else 76), status_xr=px + pw - 10, progress_bl=0, status_bl=0,
                              bar=(0, 0, 0, 0))
     if radar:  # scope on the left (top in portrait), the flight card, list, CPU/GPU and prompt beside (below) it
         RADAR.update(RADAR_LAYOUT[portrait])
@@ -575,6 +588,12 @@ HORROR_WORDS = {"boot": "IT WOKE UP", "now-playing": "YOU ARE STILL PLAYING", "d
                 "last-session": "THE LAST TIME YOU PLAYED", "idle": "NOBODY IS PLAYING", "idle-text": "so who is breathing"}
 
 
+# Seismograph status line wording ("EPICENTRE Hades II"; idle: "BACKGROUND NOISE" / "all stations quiet")
+SEISMO_WORDS = {"boot": "CALIBRATING", "now-playing": "EPICENTRE", "downloading": "INCOMING WAVES", "installing": "SETTLING",
+                "verifying": "SURVEYING", "fossilize_replay": "COMPILING STRATA", "last-session": "LAST TREMOR",
+                "idle": "BACKGROUND NOISE", "idle-text": "all stations quiet"}
+
+
 # Radar status line wording
 RADAR_WORDS = {"boot": "STARTING", "now-playing": "NOW PLAYING", "downloading": "DOWNLOADING", "installing": "INSTALLING",
                "verifying": "VERIFYING", "fossilize_replay": "SHADERS", "last-session": "LAST GAME", "idle": "STANDBY",
@@ -589,7 +608,7 @@ def videotex_code(logo):
 def prompt_prefix(user, prompt):
     """What precedes the live command word in the prompt's label row."""
     return {"gameboy": user.upper(), "retrowave": f"1UP {user.upper()}", "videotex": "", "mission": "",
-            "minecraft": "", "nixie": "", "radar": "", "halloween": "", "christmas": "", "horror": ""}.get(SKIN_NAME, prompt)
+            "minecraft": "", "nixie": "", "radar": "", "halloween": "", "christmas": "", "horror": "", "seismograph": ""}.get(SKIN_NAME, prompt)
 
 
 def build_theme(title, prompt, user):
@@ -634,6 +653,9 @@ def build_theme(title, prompt, user):
                             "COL_WORDS": {"SESSION": "SEANCE", "TIME": "SEANCE"}})
     if SKIN_NAME == "christmas":
         prompt_spec.update({"CMD_WORDS": CHRISTMAS_WORDS, "LABEL_COLOR": rgb(SKIN["mid"])})
+    if SKIN_NAME == "seismograph":
+        prompt_spec.update({"CMD_WORDS": SEISMO_WORDS, "LABEL_COLOR": rgb(SKIN["mid"]),
+                            "COL_WORDS": {"SESSION": "DURATION", "TIME": "DURATION"}})
     if SKIN_NAME == "horror":
         prompt_spec.update({"CMD_WORDS": HORROR_WORDS, "LABEL_COLOR": rgb(SKIN["mid"]),
                             "COL_WORDS": {"SESSION": "YOU STAYED", "TIME": "YOU STAYED"}})
@@ -665,7 +687,7 @@ def build_theme(title, prompt, user):
         "IMAGE_NOLOGO": "splash_nologo.png", "LOGO_TEXT": LOGO,
     }
     if SKIN_NAME not in ("retrowave", "videotex", "mission", "minecraft", "nixie", "radar", "halloween",
-                         "christmas", "horror"):  # pixel-font logo
+                         "christmas", "horror", "seismograph"):  # pixel-font logo
         splash.update({"LOGO_SIZE": logo_size(LOGO), "LOGO_BL": logo_baseline(logo_size(LOGO)),
                        "LOGO_BOX": list(sl["logo_box"])})
     if SKIN_NAME == "phosphor":  # the dark tube the warm-up starts from: only the text has to be sent after it
@@ -791,6 +813,8 @@ def build_theme(title, prompt, user):
         theme = radar_theme(theme)
     if SKIN_NAME == "horror":
         theme = horror_theme(theme, user)
+    if SKIN_NAME == "seismograph":
+        theme = seismo_theme(theme, title)
     return theme
 
 
@@ -894,7 +918,7 @@ class Canvas:
     def finish(self):
         if SKIN_NAME == "gameboy":
             return self.lcd_grid(self.img)
-        if SKIN_NAME in ("videotex", "minecraft", "nixie", "radar", "horror"):  # flat colours, nothing else
+        if SKIN_NAME in ("videotex", "minecraft", "nixie", "radar", "horror", "seismograph"):  # flat colours, nothing else
             return self.img
         if SKIN_NAME in ("halloween", "christmas"):  # candle-lit text and dark corners, no scanlines
             img = ImageChops.add(self.img, self.glow.filter(ImageFilter.GaussianBlur(2)).point(lambda v: int(v * 0.4)))
@@ -2132,6 +2156,153 @@ def render_splash_christmas(logo=True):
 
 
 # ---------------------------------------------------------------------------------------------------------------------
+# Seismograph artwork: a helicorder's paper (the pen writes line after line on it, like the drums in observatories,
+# so only the new ink has to reach the screen), and a world map
+# ---------------------------------------------------------------------------------------------------------------------
+SEISMO_LAYOUT = {  # landscape, portrait
+    False: dict(paper=(4, 18, 472, 168), rows=7, map=(4, 191, 168, 84), card=(176, 190, 146, 86),
+                labels=(("CPU", 326, 210, "ls"), ("GPU", 326, 236, "ls"), ("RAM", 326, 262, "ls")),
+                cpu=((352, 212), (474, 212)), gpu=((352, 238), (474, 238)), ram=(352, 264), pwr=(474, 264),
+                lines=((324, 190, 324, 276), (174, 190, 174, 276))),
+    True: dict(paper=(4, 18, 312, 208), rows=8, map=(4, 230, 156, 78), card=(166, 229, 150, 86),
+               labels=(("CPU", 8, 328, "ls"), ("GPU", 166, 328, "ls"), ("RAM", 8, 376, "ls"), ("APU W", 166, 376, "ls")),
+               cpu=((8, 352), (154, 352)), gpu=((166, 352), (312, 352)), ram=(8, 400), pwr=(312, 400),
+               lines=((160, 316, 160, 416), (4, 318, 316, 318))),
+}
+SM_PAPER, SM_RULE, SM_TICK = (238, 230, 208), (222, 212, 188), (206, 194, 168)
+SM_INKS = ((28, 30, 40), (168, 34, 30), (28, 62, 150), (26, 104, 62))  # a helicorder changes ink from line to line
+SM_MARGIN = 36  # the paper's left margin, where each line's time is written
+SM_SEA, SM_LAND, SM_COAST, SM_GRATICULE = (14, 22, 28), (54, 62, 54), (92, 102, 88), (24, 34, 40)
+# the continents, roughly: (longitude, latitude). Coarse is fine at this size, and the quakes draw the plates' edges
+SM_WORLD = (
+    ((-168, 66), (-156, 71), (-140, 70), (-125, 70), (-110, 68), (-95, 72), (-85, 70), (-82, 66), (-94, 60), (-92, 57),
+     (-82, 52), (-79, 55), (-78, 62), (-70, 62), (-65, 60), (-56, 52), (-66, 50), (-60, 46), (-70, 43), (-75, 38), (-81, 31),
+     (-80, 25), (-82, 29), (-90, 29), (-97, 26), (-97, 20), (-90, 18), (-87, 21), (-88, 16), (-83, 15), (-83, 10), (-78, 9),
+     (-80, 7), (-85, 10), (-92, 14), (-100, 17), (-106, 22), (-110, 24), (-115, 31), (-120, 34), (-124, 40), (-124, 48),
+     (-130, 54), (-140, 60), (-150, 60), (-158, 57), (-165, 54), (-160, 59), (-165, 62)),  # North America
+    ((-43, 60), (-52, 65), (-55, 70), (-70, 77), (-60, 82), (-30, 83), (-18, 78), (-22, 70), (-32, 68)),  # Greenland
+    ((-78, 9), (-72, 12), (-62, 10), (-52, 5), (-50, 0), (-35, -6), (-39, -14), (-41, -22), (-48, -26), (-53, -34),
+     (-58, -38), (-65, -42), (-68, -50), (-69, -55), (-74, -52), (-74, -42), (-71, -30), (-70, -18), (-76, -14), (-81, -5),
+     (-80, 1), (-77, 7)),  # South America
+    ((-6, 35), (10, 37), (11, 33), (20, 31), (25, 32), (34, 31), (37, 22), (43, 12), (51, 12), (47, 4), (40, -3), (40, -15),
+     (35, -20), (33, -27), (26, -34), (18, -34), (13, -18), (12, -5), (9, 4), (-5, 5), (-12, 8), (-17, 14), (-16, 22),
+     (-10, 30)),  # Africa
+    ((-9, 37), (-9, 43), (-2, 44), (-4, 48), (3, 51), (8, 54), (9, 57), (12, 54), (20, 55), (24, 59), (30, 60), (22, 60),
+     (18, 60), (17, 57), (12, 56), (10, 59), (5, 60), (8, 63), (15, 69), (25, 71), (40, 67), (45, 68), (60, 69), (68, 72),
+     (80, 73), (105, 77), (115, 74), (130, 72), (140, 73), (160, 70), (180, 68), (178, 62), (170, 60), (163, 58), (160, 52),
+     (156, 57), (155, 60), (143, 59), (136, 54), (140, 48), (130, 42), (127, 35), (125, 39), (121, 40), (118, 38), (122, 31),
+     (120, 26), (110, 21), (106, 18), (109, 12), (105, 9), (100, 13), (103, 2), (98, 8), (97, 16), (92, 22), (88, 22), (80, 15),
+     (78, 8), (73, 18), (72, 21), (67, 25), (58, 25), (57, 27), (49, 30), (52, 24), (56, 25), (59, 22), (52, 16), (43, 13),
+     (39, 21), (35, 28), (36, 36), (28, 37), (26, 40), (23, 37), (20, 40), (18, 40), (16, 38), (13, 44), (10, 44), (3, 43),
+     (0, 39), (-5, 36)),  # Eurasia
+    ((114, -22), (122, -18), (130, -12), (136, -12), (140, -17), (145, -15), (153, -26), (150, -37), (144, -39), (138, -35),
+     (130, -32), (116, -35)),  # Australia
+    ((-5, 50), (1, 51), (-2, 57), (-6, 58), (-3, 54)), ((-10, 52), (-6, 52), (-6, 55), (-10, 54)),  # Britain, Ireland
+    ((-24, 65), (-14, 66), (-15, 63), (-22, 63)),  # Iceland
+    ((130, 31), (136, 34), (141, 36), (142, 42), (145, 44), (141, 45), (139, 38), (132, 35)),  # Japan
+    ((95, 5), (105, -5), (102, -4), (97, 2)), ((109, 1), (117, 7), (118, 1), (115, -4), (110, -3)),  # Sumatra, Borneo
+    ((105, -6), (115, -8), (105, -8)), ((120, 1), (124, 1), (122, -5), (120, -4)),  # Java, Sulawesi
+    ((131, -1), (141, -3), (150, -10), (140, -9), (134, -4)), ((120, 18), (122, 18), (126, 7), (122, 7)),  # New Guinea, Philippines
+    ((173, -35), (178, -38), (170, -46), (167, -45)), ((49, -12), (50, -16), (47, -25), (44, -24), (44, -17)),  # New Zealand, Madagascar
+    ((-85, 22), (-75, 20), (-80, 23)),  # Cuba
+    ((-180, -72), (-120, -74), (-60, -66), (-30, -76), (30, -69), (90, -66), (150, -68), (180, -72), (180, -90), (-180, -90)),  # Antarctica
+)
+
+
+def sm_world(w, h):
+    """The world map: a plain latitude and longitude projection, 2:1."""
+    k = 4
+    image = Image.new("RGB", (w * k, h * k), SM_SEA)
+    d = ImageDraw.Draw(image)
+    project = lambda lon, lat: ((lon + 180) / 360 * w * k, (90 - lat) / 180 * h * k)
+    for lon in range(-150, 180, 30):
+        d.line((project(lon, 90), project(lon, -90)), fill=SM_GRATICULE, width=k // 2)
+    for lat in range(-60, 90, 30):
+        d.line((project(-180, lat), project(180, lat)), fill=SM_GRATICULE, width=k // 2)
+    for shape in SM_WORLD:
+        points = [project(*p) for p in shape]
+        d.polygon(points, fill=SM_LAND)
+        d.line(points + points[:1], fill=SM_COAST, width=k)
+    return image.resize((w, h), Image.LANCZOS)
+
+
+def render_background_seismograph(title):
+    """The instrument: the blank sheet with its ruled lines and minute ticks, the map, the labels."""
+    sl = SEISMO_LAYOUT[PORTRAIT]
+    c = Canvas()
+    c.label(6, HEADER_BL, title, SKIN["mid"], glow=False)
+    c.d.line((0, HEADER_H + 1, W, HEADER_H + 1), fill=SKIN["grid_dot"])
+    x, y, w, h = sl["paper"]
+    c.d.rectangle((x, y, x + w - 1, y + h - 1), fill=SM_PAPER)
+    row_h = h // sl["rows"]
+    for row in range(sl["rows"]):
+        base = y + row * row_h + row_h // 2
+        for px in range(x + SM_MARGIN, x + w - 1):
+            c.d.point((px, base), fill=SM_RULE)
+        for px in range(x + SM_MARGIN, x + w - 1, 75):  # a tick every half a minute
+            c.d.line((px, base - 2, px, base + 2), fill=SM_TICK)
+    c.d.line((x + SM_MARGIN - 3, y, x + SM_MARGIN - 3, y + h - 1), fill=SM_TICK)
+    c.d.rectangle((x - 1, y - 1, x + w, y + h), outline=SKIN["mid"])
+    mx, my, mw, mh = sl["map"]
+    c.img.paste(sm_world(mw, mh), (mx, my))
+    c.d.rectangle((mx - 1, my - 1, mx + mw, my + mh), outline=SKIN["grid_dot"])
+    cx, cy, _, _ = sl["card"]
+    c.label(cx + 2, cy + 12, "LAST QUAKE", SKIN["dim"], glow=False)
+    for word, lx, bl, anchor in sl["labels"]:
+        c.label(lx, bl, word, SKIN["dim"], anchor=anchor, glow=False)
+    for line in sl["lines"]:
+        c.d.line(line, fill=SKIN["grid_dot"])
+    c.dotted_hline(4, W - 4, PROMPT_Y)
+    return c.finish()
+
+
+def seismo_spec(title):
+    sl = SEISMO_LAYOUT[PORTRAIT]
+    header_x = 6 + len(title) * CH[S] + 12
+    spec = {"PAPER": list(sl["paper"]), "ROWS": sl["rows"], "MARGIN": SM_MARGIN, "MAP": list(sl["map"]), "CARD": list(sl["card"]),
+            "HEADER": [header_x, HEADER_BL, CLOCK_XR - CLOCK_CHARS * CH[S] - 6], "SPEED": 2.5, "FPS": 8, "TILE": 10,
+            "MIN_MAG": SEISMO_MIN_MAG, "FONT": FONT, "BACKGROUND_IMAGE": "background.png",
+            "INKS": [list(c) for c in SM_INKS],
+            "COLORS": {"BRIGHT": rgb(SKIN["value"]), "MID": rgb(SKIN["mid"]), "DIM": rgb(SKIN["dim"]),
+                       "RED": rgb(SKIN["alert"]), "AMBER": rgb(SKIN["hot"]), "PAPER_DIM": rgb((150, 140, 118))}}
+    if SEISMO_STATION:
+        spec.update({"LAT": round(SEISMO_STATION[0], 4), "LON": round(SEISMO_STATION[1], 4)})
+    return spec
+
+
+def seismo_theme(theme, title):
+    """The seismograph widget draws the paper, the map and the last quake; the app keeps the clock, the readings, the
+    status line and the screen power."""
+    sl, custom = SEISMO_LAYOUT[PORTRAIT], theme["STATS"]["CUSTOM"]
+    heat = lambda at: dict(heat_colors(TEMP_COLD, TEMP_HOT, TEMP_ALERT), INK=rgb(SKIN["ink"]),
+                           HEAT_TEXT=text(at[0], at[1], M, 5, right=True))
+    load = lambda at: text(at[0], at[1], M, 4)
+    power = dict(heat_colors(POWER_LOW, (POWER_LOW + POWER_HIGH) // 2, POWER_HIGH),
+                 HEAT_TEXT=text(sl["pwr"][0], sl["pwr"][1], M, 5, right=True))
+    spec = seismo_spec(title)
+    theme["STATS"] = {
+        "CPU": {"PERCENTAGE": {"INTERVAL": 1, "TEXT": load(sl["cpu"][0])}},
+        "MEMORY": {"INTERVAL": 2, "VIRTUAL": {"PERCENT_TEXT": load(sl["ram"])}},
+        "DATE": {"INTERVAL": 1, "HOUR": {"TEXT": text(CLOCK_XR, HEADER_BL, S, CLOCK_CHARS, SKIN["value"], right=True,
+                                                      FORMAT="HH:mm:ss")}},
+        "CUSTOM": {
+            "INTERVAL": 1,
+            "Bc250CpuTemp": heat(sl["cpu"][1]),
+            "Bc250GpuTemp": heat(sl["gpu"][1]),
+            "Bc250GpuLoad": {"TEXT": load(sl["gpu"][0])},
+            "Bc250ApuPower": power,
+            "Bc250Seismograph": spec,
+            "Bc250Prompt": custom["Bc250Prompt"],
+            "Bc250Screen": custom["Bc250Screen"],
+        },
+    }
+    theme["bc250_splash"].update({"STYLE": "seismograph", "IMAGE": "background.png", "PAPER": spec["PAPER"],
+                                  "ROWS_ON_PAPER": spec["ROWS"], "INKS": spec["INKS"], "MIN_MAG": spec["MIN_MAG"],
+                                  "MARGIN": spec["MARGIN"]})
+    return theme
+
+
+# ---------------------------------------------------------------------------------------------------------------------
 # Horror artwork: a security camera's view of a basement corridor, what stands in it, and its face
 # ---------------------------------------------------------------------------------------------------------------------
 HORROR_LAYOUT = {  # landscape, portrait: the feed, the console's values and labels, its separators
@@ -2956,6 +3127,10 @@ if __name__ == "__main__":
     parser.add_argument("--night", default=NIGHT,
                         help='hours when the screen sleeps unless a game runs, e.g. "23:30-08:00" (default: off)')
     parser.add_argument("--no-splash", action="store_true", help="skip the boot screen")
+    parser.add_argument("--seismo-lat", help="seismograph theme: your latitude, to show each quake's distance from you (optional)")
+    parser.add_argument("--seismo-lon", help="seismograph theme: your longitude (optional)")
+    parser.add_argument("--seismo-min-mag", type=float, default=SEISMO_MIN_MAG,
+                        help="seismograph theme: the smallest quake it records (default: %(default)s)")
     parser.add_argument("--no-jumpscare", action="store_true",
                         help="horror theme: no sudden face or bright flash when it reaches the camera")
     parser.add_argument("--radar-lat", default=str(RADAR_LAT),
@@ -2997,6 +3172,17 @@ if __name__ == "__main__":
     POWER_LOW, POWER_HIGH = args.pwr_low, args.pwr_high
     DIM_AFTER, DIM_BRIGHTNESS, NIGHT, NIGHT_MODE = args.dim_after, args.dim_brightness, args.night, args.night_mode
 
+    if SKIN_NAME == "seismograph":
+        if bool(args.seismo_lat) != bool(args.seismo_lon):
+            parser.error("--seismo-lat and --seismo-lon go together")
+        if args.seismo_lat:
+            try:
+                SEISMO_STATION = (parse_coordinate(args.seismo_lat), parse_coordinate(args.seismo_lon))
+            except ValueError:
+                parser.error("--seismo-lat / --seismo-lon: use decimal degrees, e.g. 48.86 and 2.29")
+            if not (-90 <= SEISMO_STATION[0] <= 90 and -180 <= SEISMO_STATION[1] <= 180):
+                parser.error("seismograph: latitude -90..90, longitude -180..180")
+        SEISMO_MIN_MAG = args.seismo_min_mag
     if SKIN_NAME == "radar":
         try:
             center = (parse_coordinate(args.radar_lat), parse_coordinate(args.radar_lon))
@@ -3008,7 +3194,7 @@ if __name__ == "__main__":
         RADAR["terrain"] = radar_terrain(*center, args.radar_range, RADAR["scope"][2])
     title = (args.title or {"videotex": f"P250 {LOGO}", "mission": f"MCC {LOGO}", "radar": f"{LOGO} RADAR",
                             "halloween": f"HAUNTED {LOGO}", "christmas": f"MERRY {LOGO}",
-                            "horror": "CAM 04  SUB-LEVEL B2"}.get(SKIN_NAME)
+                            "horror": "CAM 04  SUB-LEVEL B2", "seismograph": f"STATION {LOGO}"}.get(SKIN_NAME)
              or f"{LOGO}::{args.user.upper()}")[:28]
     prompt = f"{args.user}@{args.host}:~$"[:40]
 
@@ -3034,6 +3220,8 @@ if __name__ == "__main__":
         HW_REVEAL_BOX = ImageChops.difference(full, nologo).getbbox() or (0, 0, 1, 1)
         full.save(THEME_DIR / "splash.png")
         nologo.save(THEME_DIR / "splash_nologo.png")
+    elif SKIN_NAME == "seismograph":
+        render_background_seismograph(title).save(THEME_DIR / "background.png")
     elif SKIN_NAME == "horror":
         HR_TITLE, HR_JUMPSCARE = title, not args.no_jumpscare
         render_background_horror(title).save(THEME_DIR / "background.png")
@@ -3075,7 +3263,8 @@ if __name__ == "__main__":
              "radar": "BC250-Radar - live aircraft around a point (free community ADS-B data)",
              "halloween": "BC250-Halloween - pumpkins, cobwebs and a graveyard under the full moon",
              "christmas": "BC250-Christmas - snow, a lit tree and Santa's sleigh on a silent night",
-             "horror": "BC250-Horror - a security camera, a corridor, and what moves when the lights go out"}
+             "horror": "BC250-Horror - a security camera, a corridor, and what moves when the lights go out",
+             "seismograph": "BC250-Seismograph - your machine's tremors and the world's real earthquakes on one drum"}
     header = (f"# {names[SKIN_NAME]} for an AMD BC-250 Steam Machine\n"
               f"# Turing 3.5\" {'portrait' if PORTRAIT else 'landscape'}. GENERATED by make_theme.py: "
               "edit the script or its options and re-run it.\n"

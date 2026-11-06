@@ -106,7 +106,7 @@ def main():
             if args.quick and theme != "radar":
                 continue
             results.append(run(app, env, "check_app.py", theme))
-        for theme in ("radar", "horror"):  # layouts of their own, with a thread drawing on them
+        for theme in ("radar", "horror", "seismograph"):  # layouts of their own, with a thread drawing on them
             if theme in themes and not args.quick:
                 results.append(run(app, env, "check_app.py", theme, "--portrait"))
         if "horror" in themes and not args.quick:

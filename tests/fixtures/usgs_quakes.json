@@ -1,0 +1,17 @@
+{"type": "FeatureCollection", "metadata": {"title": "Test data in the USGS GeoJSON format: invented quakes, times in ms before now", "count": 14},
+"features": [
+{"type": "Feature", "id": "test01", "properties": {"mag": 6.4, "place": "78 km SSW of Neiafu, Tonga", "time": -1320000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [-174.3, -19.3, 112.0]}},
+{"type": "Feature", "id": "test02", "properties": {"mag": 3.0, "place": "10 km WNW of Seldovia, Alaska", "time": -3600000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [-151.9, 59.5, 57.4]}},
+{"type": "Feature", "id": "test03", "properties": {"mag": 4.8, "place": "120 km E of Hualien City, Taiwan", "time": -7200000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [122.8, 24.0, 22.0]}},
+{"type": "Feature", "id": "test04", "properties": {"mag": 5.1, "place": "Kermadec Islands region", "time": -11000000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [-177.9, -30.1, 45.0]}},
+{"type": "Feature", "id": "test05", "properties": {"mag": 4.6, "place": "45 km S of Pisco, Peru", "time": -15000000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [-76.2, -14.1, 38.0]}},
+{"type": "Feature", "id": "test06", "properties": {"mag": 2.7, "place": "9 km NE of Ridgecrest, California", "time": -19000000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [-117.6, 35.7, 8.0]}},
+{"type": "Feature", "id": "test07", "properties": {"mag": 4.5, "place": "off the east coast of Honshu, Japan", "time": -23000000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [142.9, 38.2, 30.0]}},
+{"type": "Feature", "id": "test08", "properties": {"mag": 5.3, "place": "95 km W of Tobelo, Indonesia", "time": -30000000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [127.1, 1.7, 60.0]}},
+{"type": "Feature", "id": "test09", "properties": {"mag": 4.9, "place": "Mid-Atlantic Ridge", "time": -36000000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [-30.5, 12.0, 10.0]}},
+{"type": "Feature", "id": "test10", "properties": {"mag": 4.7, "place": "33 km N of Antalya, Turkey", "time": -42000000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [30.7, 37.2, 12.0]}},
+{"type": "Feature", "id": "test11", "properties": {"mag": 5.6, "place": "Kuril Islands", "time": -50000000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [151.2, 46.1, 40.0]}},
+{"type": "Feature", "id": "test12", "properties": {"mag": 4.6, "place": "Hindu Kush region, Afghanistan", "time": -60000000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [70.8, 36.5, 210.0]}},
+{"type": "Feature", "id": "test13", "properties": {"mag": 2.9, "place": "12 km S of Pahala, Hawaii", "time": -70000000, "type": "earthquake"}, "geometry": {"type": "Point", "coordinates": [-155.5, 19.1, 30.0]}},
+{"type": "Feature", "id": "test14", "properties": {"mag": 3.1, "place": "4 km NW of a quarry, Nowhere", "time": -5000000, "type": "quarry blast"}, "geometry": {"type": "Point", "coordinates": [10.0, 50.0, 0.0]}}
+]}

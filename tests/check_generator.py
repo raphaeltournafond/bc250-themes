@@ -56,6 +56,13 @@ def live_boxes(theme_yaml):
         boxes.append(("radar list", *radar["LIST"]))
         xr, bl, w = radar["COUNT"]
         boxes.append(("radar count", xr - w, bl - 11, xr, bl + 3))
+    seismo = custom.get("Bc250Seismograph")
+    if seismo:
+        for name, (x, y, w, h) in (("paper", seismo["PAPER"]), ("map", seismo["MAP"]), ("card", seismo["CARD"])):
+            top = y + 14 if name == "card" else y  # (its heading is printed on the background)
+            boxes.append((f"seismograph {name}", x, top, x + w, y + h))
+        x, bl, xr = seismo["HEADER"]
+        boxes.append(("seismograph header", x, bl - 11, xr, bl + 3))
     horror = custom.get("Bc250Horror")
     if horror:
         x, y, w, h = horror["FEED"]

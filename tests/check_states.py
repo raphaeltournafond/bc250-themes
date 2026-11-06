@@ -215,4 +215,33 @@ board(16, 1500)
 assert b.gpu_clock_mhz() == 1500, "unlocked with fix-freq: the real clock"
 print("PASS states: GPU clock on stock and core-unlocked boards", flush=True)
 
+
+# the earthquake feed: odd entries are skipped, the first answer plays only its latest quake, later ones what is new
+def quake(id_, mag, age_s, kind="earthquake", place="10 km N of Somewhere, Nowhere"):
+    return {"id": id_, "properties": {"mag": mag, "place": place, "time": (real_time() - age_s) * 1000, "type": kind},
+            "geometry": {"coordinates": [10.0, 20.0, 33.0]}}
+
+
+real_time = b.time.time
+Q = b._QuakeFeed
+odd = {"features": [quake("a", 5.0, 600), quake("b", None, 600), quake("c", 3.0, 600, "quarry blast"), quake("d", 1.0, 600),
+                    {"id": "e", "properties": {"mag": 4.0}}, quake("f", 4.0, 7200, place=None), quake("g", 6.1, 300)]}
+parsed = {q["id"]: q for q in Q._parse(odd, 2.5)}
+assert sorted(parsed) == ["a", "f", "g"], parsed
+assert parsed["a"]["lon"] == 10.0 and parsed["a"]["lat"] == 20.0 and parsed["a"]["depth"] == 33.0
+assert parsed["f"]["place"] == "unknown place"
+Q.quakes, Q.arrivals = {}, []
+Q.ingest(odd, 2.5, first=True)
+assert [q["id"] for q in Q.arrivals] == ["g"] and len(Q.quakes) == 3, "the first answer: the map, and only the latest played"
+Q.arrivals = []
+Q.ingest(odd, 2.5)
+assert Q.arrivals == [], "nothing new"
+Q.ingest({"features": [quake("h", 4.2, 60), quake("late", 4.2, 5 * 3600), quake("old", 4.2, 30 * 3600)]}, 2.5)
+assert [q["id"] for q in Q.arrivals] == ["h"], "new and recent are played; a late one only goes on the map"
+assert "late" in Q.quakes and "old" not in Q.quakes, "a day's worth is kept"
+assert Q.tier(1.0) == "1.0" and Q.tier(2.5) == "2.5" and Q.tier(5) == "4.5"
+assert b._short_place("78 km SSW of Neiafu, Tonga") == "Neiafu, Tonga" and b._short_place("Fiji region") == "Fiji region"
+assert abs(b._distance_km(48.86, 2.35, 40.71, -74.0) - 5837) < 30, "Paris to New York"
+print("PASS states: earthquake feed", flush=True)
+
 shutil.rmtree(tmp)

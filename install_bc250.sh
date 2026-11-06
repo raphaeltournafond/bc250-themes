@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Installs a BC-250 theme (Phosphor, Game Boy, Retrowave, Videotex, Mission, Minecraft, Nixie, Radar, Halloween, Christmas or Horror) into a turing-smart-screen-python checkout.
+# Installs a BC-250 theme (Phosphor, Game Boy, Retrowave, Videotex, Mission, Minecraft, Nixie, Radar, Halloween, Christmas, Horror or Seismograph) into a turing-smart-screen-python checkout.
 # Usage: ./install_bc250.sh /path/to/turing-smart-screen-python [options]
-#   --theme NAME   phosphor (green terminal), gameboy (RPG screen), retrowave (neon), videotex (Minitel), mission (Apollo console), minecraft, nixie, radar (live flights), halloween, christmas or horror
+#   --theme NAME   phosphor (green terminal), gameboy (RPG screen), retrowave (neon), videotex (Minitel), mission (Apollo console), minecraft, nixie, radar (live flights), halloween, christmas, horror or seismograph (real earthquakes)
 #   --user NAME    user in the "user@host:~$" prompt   (default: your login, $(whoami))
 #   --host NAME    host in the prompt                  (default: $(hostname -s))
 #   --title TEXT   header text                         (default: <LOGO>::<USER>)
@@ -19,6 +19,7 @@
 #   --no-splash    skip the BIOS-style boot screen
 #   --portrait     portrait layout (320x480) instead of landscape
 #   --no-jumpscare horror theme: no sudden face or bright flash
+#   --seismo-lat L / --seismo-lon L / --seismo-min-mag M   seismograph theme: where you are (optional) and the smallest quake
 #   --radar-lat L / --radar-lon L / --radar-range KM   radar theme: centre (decimal degrees) and range
 # Re-run it any time to change these; it is safe to run repeatedly.
 set -euo pipefail
@@ -26,7 +27,7 @@ set -euo pipefail
 SRC="$(cd "$(dirname "$0")" && pwd)"
 REPO="${1:-}"
 if [[ -z "$REPO" || ! -f "$REPO/main.py" || ! -f "$REPO/library/sensors/sensors_custom.py" ]]; then
-  sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//' >&2
+  sed -n '3,24p' "$0" | sed 's/^# \{0,1\}//' >&2
   exit 1
 fi
 shift
@@ -36,7 +37,7 @@ THEME_NAME=phosphor
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --theme) THEME_NAME="${2:?--theme needs a value}"; shift 2 ;;
-    --user|--host|--title|--logo|--subtitle|--cold|--hot|--alert|--pwr-low|--pwr-high|--dim-after|--dim-brightness|--night|--night-mode|--radar-lat|--radar-lon|--radar-range) GEN_ARGS+=("$1" "${2:?$1 needs a value}"); shift 2 ;;
+    --user|--host|--title|--logo|--subtitle|--cold|--hot|--alert|--pwr-low|--pwr-high|--dim-after|--dim-brightness|--night|--night-mode|--radar-lat|--radar-lon|--radar-range|--seismo-lat|--seismo-lon|--seismo-min-mag) GEN_ARGS+=("$1" "${2:?$1 needs a value}"); shift 2 ;;
     --no-splash|--portrait|--no-jumpscare) GEN_ARGS+=("$1"); shift ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
@@ -54,7 +55,8 @@ case "$THEME_NAME" in
   halloween) THEME_FOLDER=BC250-Halloween ;;
   christmas) THEME_FOLDER=BC250-Christmas ;;
   horror) THEME_FOLDER=BC250-Horror ;;
-  *) echo "Unknown theme: $THEME_NAME (phosphor, gameboy, retrowave, videotex, mission, minecraft, nixie, radar, halloween, christmas or horror)" >&2; exit 1 ;;
+  seismograph) THEME_FOLDER=BC250-Seismograph ;;
+  *) echo "Unknown theme: $THEME_NAME (phosphor, gameboy, retrowave, videotex, mission, minecraft, nixie, radar, halloween, christmas, horror or seismograph)" >&2; exit 1 ;;
 esac
 
 for theme in "$SRC"/res/themes/BC250-*; do cp -r "$theme" "$REPO/res/themes/"; done

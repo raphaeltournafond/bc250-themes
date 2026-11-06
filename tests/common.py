@@ -18,7 +18,8 @@ FIXTURES = os.path.join(REPO, "tests", "fixtures")
 THEMES = {"phosphor": "BC250-Phosphor", "gameboy": "BC250-GameBoy", "retrowave": "BC250-Retrowave",
           "videotex": "BC250-Videotex", "mission": "BC250-Mission", "minecraft": "BC250-Minecraft",
           "nixie": "BC250-Nixie", "radar": "BC250-Radar", "halloween": "BC250-Halloween",
-          "christmas": "BC250-Christmas", "horror": "BC250-Horror"}
+          "christmas": "BC250-Christmas", "horror": "BC250-Horror",
+          "seismograph": "BC250-Seismograph"}
 LINK_BYTES_PER_S = 160_000
 COMMAND_S = 0.0015
 
@@ -65,6 +66,7 @@ def fake_bc250(root):
     return {"BC250_SYSFS_ROOT": root, "BC250_PROC_ROOT": proc, "BC250_MANGOHUD_DIR": os.path.join(root, "mangologs"),
             "BC250_RADAR_FIXTURE": os.path.join(FIXTURES, "radar_adsb.json"),
             "BC250_RADAR_ROUTES": os.path.join(FIXTURES, "radar_routes.json"),
+            "BC250_QUAKE_FIXTURE": os.path.join(FIXTURES, "usgs_quakes.json"),
             "XDG_CACHE_HOME": os.path.join(root, "cache"), "PYSTRAY_BACKEND": "dummy", "BC250_FAKE_ROOT": root}
 
 

@@ -2,7 +2,7 @@
 
 [![tests](https://github.com/raphaeltournafond/bc250-themes/actions/workflows/tests.yml/badge.svg)](https://github.com/raphaeltournafond/bc250-themes/actions/workflows/tests.yml)
 
-Eleven themes for [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python), made for a **3.5" Turing screen** (landscape or portrait) on an **AMD BC-250 Steam Machine running Bazzite**. Each has its own boot animation. Pick one with `--theme`:
+Twelve themes for [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python), made for a **3.5" Turing screen** (landscape or portrait) on an **AMD BC-250 Steam Machine running Bazzite**. Each has its own boot animation. Pick one with `--theme`:
 
 <table>
   <tr>
@@ -21,10 +21,11 @@ Eleven themes for [turing-smart-screen-python](https://github.com/mathoudebine/t
   </tr>
   <tr>
     <td align="center" width="20%"><img src="res/themes/BC250-Horror/preview.png" width="165" alt="Horror theme"><br><b>Horror</b><br><code>horror</code><br>it moves when the lights go out</td>
+    <td align="center" width="20%"><img src="res/themes/BC250-Seismograph/preview.png" width="165" alt="Seismograph theme"><br><b>Seismograph</b><br><code>seismograph</code><br>real earthquakes, live</td>
   </tr>
 </table>
 
-Nine of them show the same live data: CPU, GPU, system, and what the machine is playing or downloading. The radar trades some of it for live flights around a point you choose, and the horror theme for a camera watching a corridor you'd rather not look at. Portrait layouts, boot animations and details are under [Themes](#themes).
+Nine of them show the same live data: CPU, GPU, system, and what the machine is playing or downloading. The radar trades some of it for live flights around a point you choose, the horror theme for a camera watching a corridor you'd rather not look at, and the seismograph for the world's real earthquakes. Portrait layouts, boot animations and details are under [Themes](#themes).
 
 ## Quick start
 
@@ -50,7 +51,7 @@ That's it: the screen now starts with the boot animation every time the BC-250 b
 | To… | Run |
 |---|---|
 | update the theme | `git -C bc250-themes pull && bash bc250-themes/setup.sh` |
-| switch theme | `bash bc250-themes/setup.sh --theme gameboy` (or `retrowave`, `videotex`, `mission`, `minecraft`, `nixie`, `radar`, `halloween`, `christmas`, `horror`, `phosphor`) |
+| switch theme | `bash bc250-themes/setup.sh --theme gameboy` (or `retrowave`, `videotex`, `mission`, `minecraft`, `nixie`, `radar`, `halloween`, `christmas`, `horror`, `seismograph`, `phosphor`) |
 | change an option | `bash bc250-themes/setup.sh --night 23:30-08:00 --logo "MY RIG"` (remembered for next time) |
 | go back to the defaults | `bash bc250-themes/setup.sh --reset-options` |
 | remove it | `bash bc250-themes/setup.sh --uninstall` |
@@ -275,13 +276,43 @@ It moves in the dark, in small boxes, or with a single brightness command, so it
 
 </details>
 
+<details>
+<summary><b>Seismograph</b> <code>--theme seismograph</code>: your machine's tremors and the world's real earthquakes on one drum</summary>
+
+<br>
+
+![seismograph landscape](res/themes/BC250-Seismograph/preview.png) ![seismograph portrait](res/themes/BC250-Seismograph/preview_portrait.png)
+
+A helicorder, the drum recorder observatories use: the pen writes line after line across a sheet of paper, each line in another ink and timed in the margin, so what happened stays on the page.
+
+- **The pen trembles with your machine:** barely a line when idle, shaking under CPU and GPU load. A game starting is noted on the paper.
+- **A real earthquake throws it across the lines,** with the shape a seismogram has: the small fast P waves, the big S waves, then the long decay. Its size follows the magnitude, its name is written beside it, it takes the card (magnitude, depth, place, how long ago), and waves spread from it on the map.
+- **From M5, the card shakes. From M5.5, the whole screen's backlight trembles.**
+- **The map** fills with the past day's quakes, and they draw the edges of the tectonic plates by themselves: red for the last hour, amber before that.
+- **The status line:** "EPICENTRE Hades II", "INCOMING WAVES" for a download, "COMPILING STRATA" for shaders, and "BACKGROUND NOISE" / "all stations quiet" when idle.
+- **Boot:** the station's log typed on the paper, the feed contacted, then the calibration pulses every real seismogram starts with.
+
+```bash
+bash bc250-themes/setup.sh --theme seismograph
+bash bc250-themes/setup.sh --theme seismograph --seismo-lat 48.8584 --seismo-lon 2.2945   # to see how far away each quake is
+```
+
+- Data: the [USGS earthquake feeds](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php), public, with no key, updated every minute. The theme only downloads a public list, so your location isn't sent anywhere. It asks once a minute and stops while the screen sleeps.
+- About 30 M2.5+ quakes happen a day, so the pen can write quietly for a while. That is what it should do.
+- At start it plays the latest quake of the past day, so the page isn't blank. Quakes reach the feed minutes after they happen: **this is a display, not an earthquake warning.**
+- The map is drawn by `make_theme.py`, on purpose rather coarse. `bc250_check.py` tells you whether the feed answers.
+
+![seismograph boot](res/themes/BC250-Seismograph/splash_preview.gif)
+
+</details>
+
 *Game Boy- and Minecraft-inspired fan themes, not affiliated with or endorsed by Nintendo, Mojang or Microsoft; they use no logos or game assets (all art is drawn by `make_theme.py`). Retrowave's logo uses the Race Space font that comes with the app (free for non-commercial use).*
 
 ## Options
 
 | Option | Default | Effect |
 |---|---|---|
-| `--theme NAME` | `phosphor` | `phosphor` (green terminal), `gameboy` (4-shade RPG status screen), `retrowave` (neon sunset), `videotex` (French videotex pages), `mission` (1969 mission control), `minecraft` (blocky inventory), `nixie` (Nixie tubes), `radar` (live flights), `halloween` (pumpkins and a graveyard), `christmas` (snow and Santa's sleigh) or `horror` (a security camera, and what moves when the lights go out) |
+| `--theme NAME` | `phosphor` | `phosphor` (green terminal), `gameboy` (4-shade RPG status screen), `retrowave` (neon sunset), `videotex` (French videotex pages), `mission` (1969 mission control), `minecraft` (blocky inventory), `nixie` (Nixie tubes), `radar` (live flights), `halloween` (pumpkins and a graveyard), `christmas` (snow and Santa's sleigh), `horror` (a security camera, and what moves when the lights go out) or `seismograph` (real earthquakes on a paper drum) |
 | `--portrait` | landscape | portrait layout (320×480): panels stacked, 2×3 grid |
 | `--logo TEXT` / `--subtitle TEXT` | `BC-250` / `STEAM MACHINE` | boot splash title and the line under it |
 | `--user NAME` / `--host NAME` | your login / hostname | the `user@host:~$` prompt |
@@ -293,6 +324,8 @@ It moves in the dark, in small boxes, or with a single brightness command, so it
 | `--radar-lat` / `--radar-lon` / `--radar-range KM` | Paris CDG, `50` | radar theme: the point to watch and how far around it |
 | `--no-splash` | | skip the boot animation |
 | `--no-jumpscare` | | horror theme: no sudden face or bright flash when it reaches the camera |
+| `--seismo-lat` / `--seismo-lon` | none | seismograph theme: where you are, to show each quake's distance from you. Stays on the BC-250: nothing is sent |
+| `--seismo-min-mag M` | `2.5` | seismograph theme: the smallest quake it records (below 2.5 the feed adds many small US quakes, about 30 M2.5+ happen a day worldwide) |
 | `--app PATH` / `--no-autostart` | | where the app is / don't start at boot |
 
 ## What's on screen
