@@ -158,7 +158,10 @@ def main():
     for name, cls, unit in checks:
         sensor = cls()
         n = sensor.as_numeric()
-        if n is None or n != n:  # NaN
+        if name == "GPU clock" and n != n and b.core_unlocked():
+            report(WARN, name, "the core unlock makes the kernel misread it -> screen shows '--'. To get the real "
+                               "clock: fix-freq = true under [gpu-usage] in cyan-skillfish-governor-smu's config")
+        elif n is None or n != n:  # NaN
             report(WARN, name, "not available -> screen shows '--'")
         else:
             report(OK, name, f"{n:.1f} {unit}  (screen: '{sensor.as_string().strip()}')")

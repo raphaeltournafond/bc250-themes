@@ -420,16 +420,39 @@ class _AmdGpu:
         return os.path.join(cls.hwmon, name) if cls.hwmon else None
 
 
+UNLOCKED_MIN_GPU_MHZ = 200  # the clock never really goes this low; the misread value after a core unlock stays under
+
+
+def cpu_threads() -> Optional[int]:
+    """How many threads the kernel sees ("0-11" on a stock BC-250), None if it can't be told."""
+    present = _read(os.path.join(SYSFS_ROOT, "sys/devices/system/cpu/present")) or ""
+    match = re.fullmatch(r"0-(\d+)", present.strip())
+    return int(match.group(1)) + 1 if match else None
+
+
+def core_unlocked() -> bool:
+    """Whether the board's two extra CPU cores were unlocked (8C/16T instead of 6C/12T)."""
+    return (cpu_threads() or 0) > 12
+
+
 def gpu_clock_mhz() -> Optional[float]:
+    """The GPU clock. With the core unlock the kernel misreads it (a value between 0 and 100 MHz, whatever the real
+    clock): there, a reading that low is not shown at all. cyan-skillfish-governor's fix-freq option replaces
+    freq1_input with the real clock, which then shows as usual."""
+    mhz = None
     hz = _read_int(_AmdGpu.hwmon_path("freq1_input"))
     if hz:
-        return hz / 1_000_000
-    # pp_dpm_sclk lines look like "1: 2000Mhz *", the star marking the active level
-    for line in (_read(_AmdGpu.path("pp_dpm_sclk") or "") or "").splitlines():
-        match = re.search(r"(\d+)\s*Mhz\s*\*", line, re.IGNORECASE)
-        if match:
-            return float(match.group(1))
-    return None
+        mhz = hz / 1_000_000
+    else:
+        # pp_dpm_sclk lines look like "1: 2000Mhz *", the star marking the active level
+        for line in (_read(_AmdGpu.path("pp_dpm_sclk") or "") or "").splitlines():
+            match = re.search(r"(\d+)\s*Mhz\s*\*", line, re.IGNORECASE)
+            if match:
+                mhz = float(match.group(1))
+                break
+    if mhz is not None and mhz < UNLOCKED_MIN_GPU_MHZ and core_unlocked():
+        return None
+    return mhz
 
 
 class Bc250GpuClock:

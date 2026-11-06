@@ -188,4 +188,31 @@ assert math.isnan(b.Bc250GameDisk().as_numeric()) and b.Bc250GameDisk().as_strin
 kill(40)
 print("PASS states: prompt + resilience", flush=True)
 
+# the GPU clock: a stock board shows whatever it reads, an unlocked one drops the kernel's misread value
+sysfs = os.path.join(tmp, "sysfs")
+hwmon = os.path.join(sysfs, "gpu", "hwmon0")
+os.makedirs(hwmon)
+os.makedirs(os.path.join(sysfs, "sys", "devices", "system", "cpu"))
+
+
+def board(threads, freq_mhz):
+    with open(os.path.join(sysfs, "sys", "devices", "system", "cpu", "present"), "w") as f:
+        f.write(f"0-{threads - 1}\n")
+    with open(os.path.join(hwmon, "freq1_input"), "w") as f:
+        f.write(f"{freq_mhz * 1_000_000}\n")
+
+
+b.SYSFS_ROOT = sysfs
+b._AmdGpu._searched, b._AmdGpu.device, b._AmdGpu.hwmon = True, os.path.join(sysfs, "gpu"), hwmon
+board(12, 80)
+assert b.gpu_clock_mhz() == 80, "stock: unchanged, even low"
+board(12, 1873)
+assert b.gpu_clock_mhz() == 1873
+board(16, 57)
+assert b.gpu_clock_mhz() is None, "unlocked: the misread value"
+assert math.isnan(b.Bc250GpuClock().as_numeric()) and b.Bc250GpuClock().as_string() == "----"
+board(16, 1500)
+assert b.gpu_clock_mhz() == 1500, "unlocked with fix-freq: the real clock"
+print("PASS states: GPU clock on stock and core-unlocked boards", flush=True)
+
 shutil.rmtree(tmp)

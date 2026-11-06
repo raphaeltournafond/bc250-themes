@@ -272,6 +272,7 @@ What all the themes show, each in its own style (see [Themes](#themes)):
 | Screen stuck on "Please visit www.turzx.com" | `journalctl --user -u turing-monitor -n 50` shows why the monitor isn't running |
 | Screen briefly shows the TURZX message again before the boot animation | set `RESET_ON_STARTUP: false` in the app's `config.yaml` |
 | GPU load shows `--%` | the monitor must run as the same user as Steam; setup's service does |
+| GPU clock shows `----` on a CPU-unlocked board (8C/16T) | the unlock makes the kernel misread it (between 0 and 100 MHz, whatever the real clock), so the screen leaves it out. For the real clock: `fix-freq = true` under `[gpu-usage]` in `cyan-skillfish-governor-smu`'s config, then restart that service |
 
 ## How it works
 
