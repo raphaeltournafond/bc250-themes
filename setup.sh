@@ -38,7 +38,7 @@ while [[ $# -gt 0 ]]; do
     --uninstall) UNINSTALL=1; shift ;;
     --reset-options) RESET_OPTIONS=1; shift ;;
     -h|--help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    --no-splash|--portrait) THEME_OPTS+=("$1"); shift ;;
+    --no-splash|--portrait|--no-jumpscare) THEME_OPTS+=("$1"); shift ;;
     --*) THEME_OPTS+=("$1" "${2:?$1 needs a value}"); shift 2 ;;
     *) fail "Unexpected argument: $1 (see --help)" ;;
   esac

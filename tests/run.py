@@ -106,8 +106,11 @@ def main():
             if args.quick and theme != "radar":
                 continue
             results.append(run(app, env, "check_app.py", theme))
-        if "radar" in themes and not args.quick:
-            results.append(run(app, env, "check_app.py", "radar", "--portrait"))
+        for theme in ("radar", "horror"):  # layouts of their own, with a thread drawing on them
+            if theme in themes and not args.quick:
+                results.append(run(app, env, "check_app.py", theme, "--portrait"))
+        if "horror" in themes and not args.quick:
+            results.append(run(app, env, "check_app.py", "horror", "--", "--no-jumpscare"))
 
     passed = sum(1 for ok, _ in results if ok)
     checks = sum(n for _, n in results)

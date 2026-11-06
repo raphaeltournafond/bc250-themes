@@ -29,6 +29,9 @@ def main():
     extra = argv[argv.index("--") + 1:] if "--" in argv else []
     args = parser.parse_args(argv[:argv.index("--")] if "--" in argv else argv)
     args.extra = extra
+    if args.theme == "horror" and not args.screenshot:  # the whole encounter in a few seconds, not ten minutes
+        os.environ["BC250_HORROR_FAST"] = "1"
+        args.seconds = max(args.seconds, 40)
     select_theme(args.theme, args.portrait, args.extra)
     name = f"{args.theme} {'portrait' if args.portrait else 'landscape'}"
 
@@ -81,6 +84,11 @@ def main():
                 # wall-clock smoothness depends on the machine too: shown, and only a gross stall fails
                 ok &= report(worst < 1.0, f"{name}: sweep {len(starts) / seconds:.1f} frames/s, {per_minute:.0f} pauses "
                                           f"over 200 ms a minute, longest {worst * 1000:.0f} ms")
+            if args.theme == "horror" and not args.screenshot:
+                gentle = "--no-jumpscare" in args.extra
+                ok &= report(b._Horror.moves >= 3 and b._Horror.whispers >= 1 and (b._Horror.scares == 0) == gentle,
+                             f"{name}: the encounter ran ({b._Horror.moves} blackouts, {b._Horror.scares} scare, "
+                             f"{b._Horror.whispers} whispers)" + (" with --no-jumpscare" if gentle else ""))
             if args.screenshot:
                 with rev_a.lock:
                     rev_a.screen.save(args.screenshot)

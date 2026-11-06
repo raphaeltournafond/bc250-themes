@@ -14,7 +14,8 @@ import yaml  # noqa: E402
 from PIL import Image, ImageChops  # noqa: E402
 
 ANTIALIAS_LEVELS = 8
-GENERATED_ONLY = ("preview.png", "preview_portrait.png", "splash_preview.gif", "splash_preview_portrait.gif")
+GENERATED_ONLY = ("preview.png", "preview_portrait.png", "preview_encounter.png", "splash_preview.gif",
+                  "splash_preview_portrait.gif")
 
 
 def generate(theme, portrait):
@@ -55,6 +56,12 @@ def live_boxes(theme_yaml):
         boxes.append(("radar list", *radar["LIST"]))
         xr, bl, w = radar["COUNT"]
         boxes.append(("radar count", xr - w, bl - 11, xr, bl + 3))
+    horror = custom.get("Bc250Horror")
+    if horror:
+        x, y, w, h = horror["FEED"]
+        boxes.append(("horror feed", x, y, x + w, y + h))
+        mx, my, mw, mh = horror["MOTION"]
+        boxes.append(("horror motion", mx, my + 14, mx + mw, my + mh))
     nixie = custom.get("Bc250Nixie")
     if nixie:
         for i, d in enumerate(nixie["DISPLAYS"]):

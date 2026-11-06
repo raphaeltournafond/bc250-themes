@@ -2,7 +2,7 @@
 
 [![tests](https://github.com/raphaeltournafond/bc250-themes/actions/workflows/tests.yml/badge.svg)](https://github.com/raphaeltournafond/bc250-themes/actions/workflows/tests.yml)
 
-Ten themes for [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python), made for a **3.5" Turing screen** (landscape or portrait) on an **AMD BC-250 Steam Machine running Bazzite**. Each has its own boot animation. Pick one with `--theme`:
+Eleven themes for [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python), made for a **3.5" Turing screen** (landscape or portrait) on an **AMD BC-250 Steam Machine running Bazzite**. Each has its own boot animation. Pick one with `--theme`:
 
 <table>
   <tr>
@@ -19,9 +19,12 @@ Ten themes for [turing-smart-screen-python](https://github.com/mathoudebine/turi
     <td align="center" width="20%"><img src="res/themes/BC250-Halloween/preview.png" width="165" alt="Halloween theme"><br><b>Halloween</b><br><code>halloween</code><br>pumpkins, a graveyard</td>
     <td align="center" width="20%"><img src="res/themes/BC250-Christmas/preview.png" width="165" alt="Christmas theme"><br><b>Christmas</b><br><code>christmas</code><br>snow and Santa's sleigh</td>
   </tr>
+  <tr>
+    <td align="center" width="20%"><img src="res/themes/BC250-Horror/preview.png" width="165" alt="Horror theme"><br><b>Horror</b><br><code>horror</code><br>it moves when the lights go out</td>
+  </tr>
 </table>
 
-Nine of them show the same live data: CPU, GPU, system, and what the machine is playing or downloading. The radar trades some of it for live flights around a point you choose. Portrait layouts, boot animations and details are under [Themes](#themes).
+Nine of them show the same live data: CPU, GPU, system, and what the machine is playing or downloading. The radar trades some of it for live flights around a point you choose, and the horror theme for a camera watching a corridor you'd rather not look at. Portrait layouts, boot animations and details are under [Themes](#themes).
 
 ## Quick start
 
@@ -47,7 +50,7 @@ That's it: the screen now starts with the boot animation every time the BC-250 b
 | To… | Run |
 |---|---|
 | update the theme | `git -C bc250-themes pull && bash bc250-themes/setup.sh` |
-| switch theme | `bash bc250-themes/setup.sh --theme gameboy` (or `retrowave`, `videotex`, `mission`, `minecraft`, `nixie`, `radar`, `halloween`, `christmas`, `phosphor`) |
+| switch theme | `bash bc250-themes/setup.sh --theme gameboy` (or `retrowave`, `videotex`, `mission`, `minecraft`, `nixie`, `radar`, `halloween`, `christmas`, `horror`, `phosphor`) |
 | change an option | `bash bc250-themes/setup.sh --night 23:30-08:00 --logo "MY RIG"` (remembered for next time) |
 | go back to the defaults | `bash bc250-themes/setup.sh --reset-options` |
 | remove it | `bash bc250-themes/setup.sh --uninstall` |
@@ -229,13 +232,56 @@ bash bc250-themes/setup.sh --theme radar --radar-lat 48.8584 --radar-lon 2.2945 
 
 </details>
 
+<details>
+<summary><b>Horror</b> <code>--theme horror</code>: a security camera, a corridor, and what moves when the lights go out</summary>
+
+<br>
+
+> [!WARNING]
+> This theme flickers the whole screen and, a few times an hour, shows a sudden face at full brightness. If flashing lights are a problem for you or anyone in the room, add `--no-jumpscare`, or pick another theme.
+
+![horror landscape](res/themes/BC250-Horror/preview.png) ![horror portrait](res/themes/BC250-Horror/preview_portrait.png)
+
+You are looking at CAM 04, a basement corridor. Your readings sit beside the feed. Something is standing at the far end, and you may not notice at first.
+
+- **It only moves when the lights go out.** The backlight flickers and dies, and when it comes back the figure is closer. `MOTION` counts down the metres and tells you how long ago it last moved. Under the dead lamps, only its eyes show.
+- **When it reaches the camera,** the screen goes dark for a second. Then its face. Then the corridor is empty, `MOTION` reads `NOT ON CAMERA`, and the subtitle says: IT ISN'T ON THE CAMERA ANYMORE. A few minutes later it is back at the far end, and it starts again.
+- **It talks to you, about what the machine really sees:** your name, the time ("IT IS 03:12. WHY ARE YOU STILL UP?"), your game ("1h30 IN HADES II AND YOU HAVEN'T LOOKED BEHIND YOU ONCE."), the temperature ("64°. IT LIKES THE WARMTH."), or an idle machine ("NOBODY IS PLAYING. WHO IS USING 12% OF THE CPU?").
+- **Things are not always what they were:** for a third of a second a label reads RUN, HIDE or HELP, and the header reads CAM 04 BEHIND YOU. It also blinks. Not often.
+- **The status line:** "YOU ARE STILL PLAYING Hades II", "SOMETHING IS COMING" for a download, "FEEDING IT" for shaders, and "NOBODY IS PLAYING" / "so who is breathing" when idle.
+- **Boot:** an ordinary self-test on a black screen, every line OK, until one line too many: `OCCUPANTS  2 (expected 1)`. The readings stop being readings, then dark, one sentence, and for a fifth of a second the feed with it right there.
+
+It moves in the dark, in small boxes, or with a single brightness command, so it costs the screen's slow link almost nothing.
+
+<details>
+<summary>It getting closer (spoiler)</summary>
+
+<br>
+
+![it gets closer](res/themes/BC250-Horror/preview_encounter.png)
+
+</details>
+
+<details>
+<summary>The face (really a spoiler)</summary>
+
+<br>
+
+![its face](res/themes/BC250-Horror/face.png)
+
+</details>
+
+![horror boot](res/themes/BC250-Horror/splash_preview.gif)
+
+</details>
+
 *Game Boy- and Minecraft-inspired fan themes, not affiliated with or endorsed by Nintendo, Mojang or Microsoft; they use no logos or game assets (all art is drawn by `make_theme.py`). Retrowave's logo uses the Race Space font that comes with the app (free for non-commercial use).*
 
 ## Options
 
 | Option | Default | Effect |
 |---|---|---|
-| `--theme NAME` | `phosphor` | `phosphor` (green terminal), `gameboy` (4-shade RPG status screen), `retrowave` (neon sunset), `videotex` (French videotex pages), `mission` (1969 mission control), `minecraft` (blocky inventory), `nixie` (Nixie tubes), `radar` (live flights), `halloween` (pumpkins and a graveyard) or `christmas` (snow and Santa's sleigh) |
+| `--theme NAME` | `phosphor` | `phosphor` (green terminal), `gameboy` (4-shade RPG status screen), `retrowave` (neon sunset), `videotex` (French videotex pages), `mission` (1969 mission control), `minecraft` (blocky inventory), `nixie` (Nixie tubes), `radar` (live flights), `halloween` (pumpkins and a graveyard), `christmas` (snow and Santa's sleigh) or `horror` (a security camera, and what moves when the lights go out) |
 | `--portrait` | landscape | portrait layout (320×480): panels stacked, 2×3 grid |
 | `--logo TEXT` / `--subtitle TEXT` | `BC-250` / `STEAM MACHINE` | boot splash title and the line under it |
 | `--user NAME` / `--host NAME` | your login / hostname | the `user@host:~$` prompt |
@@ -246,6 +292,7 @@ bash bc250-themes/setup.sh --theme radar --radar-lat 48.8584 --radar-lon 2.2945 
 | `--night HH:MM-HH:MM` / `--night-mode off\|dim` | off / `off` | screen sleeps (or dims) at night unless a game runs |
 | `--radar-lat` / `--radar-lon` / `--radar-range KM` | Paris CDG, `50` | radar theme: the point to watch and how far around it |
 | `--no-splash` | | skip the boot animation |
+| `--no-jumpscare` | | horror theme: no sudden face or bright flash when it reaches the camera |
 | `--app PATH` / `--no-autostart` | | where the app is / don't start at boot |
 
 ## What's on screen
