@@ -2,7 +2,7 @@
 
 [![tests](https://github.com/raphaeltournafond/bc250-themes/actions/workflows/tests.yml/badge.svg)](https://github.com/raphaeltournafond/bc250-themes/actions/workflows/tests.yml)
 
-Twelve themes for [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python), made for a **3.5" Turing screen** (landscape or portrait) on an **AMD BC-250 Steam Machine running Bazzite**. Each has its own boot animation. Pick one with `--theme`:
+Thirteen themes for [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python), made for a **3.5" Turing screen** (landscape or portrait) on an **AMD BC-250 Steam Machine running Bazzite**. Each has its own boot animation. Pick one with `--theme`:
 
 <table>
   <tr>
@@ -22,10 +22,11 @@ Twelve themes for [turing-smart-screen-python](https://github.com/mathoudebine/t
   <tr>
     <td align="center" width="20%"><img src="res/themes/BC250-Horror/preview.png" width="165" alt="Horror theme"><br><b>Horror</b><br><code>horror</code><br>it moves when the lights go out</td>
     <td align="center" width="20%"><img src="res/themes/BC250-Seismograph/preview.png" width="165" alt="Seismograph theme"><br><b>Seismograph</b><br><code>seismograph</code><br>real earthquakes, live</td>
+    <td align="center" width="20%"><img src="res/themes/BC250-Orbit/preview.png" width="165" alt="Orbit theme"><br><b>Orbit</b><br><code>orbit</code><br>the ISS, and when it passes over you</td>
   </tr>
 </table>
 
-Nine of them show the same live data: CPU, GPU, system, and what the machine is playing or downloading. The radar trades some of it for live flights around a point you choose, the horror theme for a camera watching a corridor you'd rather not look at, and the seismograph for the world's real earthquakes. Portrait layouts, boot animations and details are under [Themes](#themes).
+Nine of them show the same live data: CPU, GPU, system, and what the machine is playing or downloading. The radar trades some of it for live flights around a point you choose, the horror theme for a camera watching a corridor you'd rather not look at, the seismograph for the world's real earthquakes, and the orbit theme for the International Space Station going round. Portrait layouts, boot animations and details are under [Themes](#themes).
 
 ## Quick start
 
@@ -51,7 +52,7 @@ That's it: the screen now starts with the boot animation every time the BC-250 b
 | To… | Run |
 |---|---|
 | update the theme | `git -C bc250-themes pull && bash bc250-themes/setup.sh` |
-| switch theme | `bash bc250-themes/setup.sh --theme gameboy` (or `retrowave`, `videotex`, `mission`, `minecraft`, `nixie`, `radar`, `halloween`, `christmas`, `horror`, `seismograph`, `phosphor`) |
+| switch theme | `bash bc250-themes/setup.sh --theme gameboy` (or `retrowave`, `videotex`, `mission`, `minecraft`, `nixie`, `radar`, `halloween`, `christmas`, `horror`, `seismograph`, `orbit`, `phosphor`) |
 | change an option | `bash bc250-themes/setup.sh --night 23:30-08:00 --logo "MY RIG"` (remembered for next time) |
 | go back to the defaults | `bash bc250-themes/setup.sh --reset-options` |
 | remove it | `bash bc250-themes/setup.sh --uninstall` |
@@ -306,13 +307,42 @@ bash bc250-themes/setup.sh --theme seismograph --seismo-lat 48.8584 --seismo-lon
 
 </details>
 
+<details>
+<summary><b>Orbit</b> <code>--theme orbit</code>: a ground station tracking the ISS, and when it passes over you</summary>
+
+<br>
+
+![orbit landscape](res/themes/BC250-Orbit/preview.png) ![orbit portrait](res/themes/BC250-Orbit/preview_portrait.png)
+
+A ground station's tracking display. Where the International Space Station is right now, on a world map where night falls where it is really night.
+
+- **The map:** the ISS with its solar wings, the orbit it just flew (dashed) and the next one (bright), the circle of the Earth that can see it, the sun where it is overhead, and the twilight line moving with the hours.
+- **The ISS's card:** its speed (about 27 600 km/h), altitude, position, what it is flying over ("OVER THE N. PACIFIC"), whether it is in sunlight or in the Earth's shadow, and its orbit number.
+- **The next pass over you,** on a chart of your sky (the horizon round the edge, straight up in the middle, north on top): when it rises, how high it climbs and whether you can see it with your eyes. While it is overhead, the card shows where to look, and the header says "LOOK UP".
+- **The header** gives the next pass you can see, such as "NEXT VISIBLE PASS WED 18:16, MAX 85°".
+- **The status line:** "ON BOARD Hades II" with the mission elapsed time (MET), "UPLINK" for a download, "DOCKING" for an install, and "STATION KEEPING" / "all systems nominal" when idle.
+- **Boot:** the station's console comes up and runs its checks, it gets the ISS's orbit, night falls over the map, the next orbit is drawn ahead of the ISS, and rings close in on it as the station acquires it (AOS).
+
+```bash
+bash bc250-themes/setup.sh --theme orbit
+bash bc250-themes/setup.sh --theme orbit --orbit-lat 48.8584 --orbit-lon 2.2945   # to see when it passes over you
+```
+
+- Data: the ISS's orbital elements from [CelesTrak](https://celestrak.org/), or [wheretheiss.at](https://wheretheiss.at/) if CelesTrak doesn't answer. Both are public and need no key. The theme downloads them every six hours, keeps them on disk, and computes everything else on the BC-250. Your location is never sent anywhere. With elements a day old, the position is a few km off (under a pixel), and pass times are off by a few seconds. The theme also works offline for days.
+- A pass "you can see" means the ISS is in sunlight, at least 10° above your horizon, against a sky dark enough (the sun 6° below the horizon). That happens in the hour or two after sunset or before sunrise, a few days in a row, then not for a week or two. Without `--orbit-lat`/`--orbit-lon`, the pass card asks for them.
+- The map and the names of what it flies over are drawn by `make_theme.py`, on purpose rather coarse. `bc250_check.py` tells you whether the elements can be fetched, and your next visible pass.
+
+![orbit boot](res/themes/BC250-Orbit/splash_preview.gif)
+
+</details>
+
 *Game Boy- and Minecraft-inspired fan themes, not affiliated with or endorsed by Nintendo, Mojang or Microsoft; they use no logos or game assets (all art is drawn by `make_theme.py`). Retrowave's logo uses the Race Space font that comes with the app (free for non-commercial use).*
 
 ## Options
 
 | Option | Default | Effect |
 |---|---|---|
-| `--theme NAME` | `phosphor` | `phosphor` (green terminal), `gameboy` (4-shade RPG status screen), `retrowave` (neon sunset), `videotex` (French videotex pages), `mission` (1969 mission control), `minecraft` (blocky inventory), `nixie` (Nixie tubes), `radar` (live flights), `halloween` (pumpkins and a graveyard), `christmas` (snow and Santa's sleigh), `horror` (a security camera, and what moves when the lights go out) or `seismograph` (real earthquakes on a paper drum) |
+| `--theme NAME` | `phosphor` | `phosphor` (green terminal), `gameboy` (4-shade RPG status screen), `retrowave` (neon sunset), `videotex` (French videotex pages), `mission` (1969 mission control), `minecraft` (blocky inventory), `nixie` (Nixie tubes), `radar` (live flights), `halloween` (pumpkins and a graveyard), `christmas` (snow and Santa's sleigh), `horror` (a security camera, and what moves when the lights go out), `seismograph` (real earthquakes on a paper drum) or `orbit` (the ISS, and when it passes over you) |
 | `--portrait` | landscape | portrait layout (320×480): panels stacked, 2×3 grid |
 | `--logo TEXT` / `--subtitle TEXT` | `BC-250` / `STEAM MACHINE` | boot splash title and the line under it |
 | `--user NAME` / `--host NAME` | your login / hostname | the `user@host:~$` prompt |
@@ -326,6 +356,7 @@ bash bc250-themes/setup.sh --theme seismograph --seismo-lat 48.8584 --seismo-lon
 | `--no-jumpscare` | | horror theme: no sudden face or bright flash when it reaches the camera |
 | `--seismo-lat` / `--seismo-lon` | none | seismograph theme: where you are, to show each quake's distance from you. Stays on the BC-250: nothing is sent |
 | `--seismo-min-mag M` | `2.5` | seismograph theme: the smallest quake it records (below 2.5 the feed adds many small US quakes, about 30 M2.5+ happen a day worldwide) |
+| `--orbit-lat` / `--orbit-lon` | none | orbit theme: where you are, to show when the ISS passes over you and whether you can see it. Stays on the BC-250: nothing is sent |
 | `--app PATH` / `--no-autostart` | | where the app is / don't start at boot |
 
 ## What's on screen

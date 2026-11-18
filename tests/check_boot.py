@@ -68,6 +68,7 @@ def main():
     b._Splash.post_lines = staticmethod(lambda spec: [
         (label,) + BC250_LINES.get(label, (value, status)) for label, value, status in real_lines(spec)])
     b.Bc250Radar.as_numeric = lambda self: None  # the handoff would start the radar's own drawing thread
+    b.Bc250Orbit.as_numeric = lambda self: None  # (and the orbit's)
 
     background = config.THEME_DATA["static_images"]["BACKGROUND"]
     size = (background["WIDTH"], background["HEIGHT"])
@@ -101,6 +102,10 @@ def main():
     if radar.get("SCOPE"):  # the scope is kept as the boot left it: the sweep takes over from there
         cx, cy, r = (int(v) for v in radar["SCOPE"])
         shown[cy - r - 1:cy + r + 2, cx - r - 1:cx + r + 2] = target[cy - r - 1:cy + r + 2, cx - r - 1:cx + r + 2]
+    orbit = b._Draw.theme("Bc250Orbit")
+    if orbit.get("MAP"):  # so is the orbit's map: the tracker takes over from there
+        x, y, w, h = (int(v) for v in orbit["MAP"])
+        shown[y:y + h, x:x + w] = target[y:y + h, x:x + w]
     differ = int((shown != target).any(axis=2).sum())
     ok &= report(differ == 0, f"{name}: after the handoff the screen shows the dashboard's background"
                  + (f" ({differ} pixels differ)" if differ else ""))
