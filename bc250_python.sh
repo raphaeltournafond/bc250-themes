@@ -19,8 +19,11 @@ if [[ -z "$APP" || ! -f "$APP/main.py" ]]; then
   exit 2
 fi
 VENV="$APP/.venv"
-MODULES="serial yaml psutil PIL babel requests ping3 uptime numpy usb Crypto"  # what the monitor imports
+MODULES="serial yaml psutil PIL babel requests ping3 uptime numpy usb Crypto GPUtil"  # what the monitor must import
 PACKAGES="pyserial PyYAML psutil Pillow babel requests ping3 uptime numpy pyusb pycryptodome ruamel.yaml pystray"
+# GPUtil (Nvidia, imported even without one) from where the app takes it: the PyPI release broke with Python 3.12
+GPUTIL="$(sed -n 's/^\(GPUtil @ [^ ;]*\).*/\1/p' "$APP/requirements.txt" 2>/dev/null | head -1)"
+GPUTIL="${GPUTIL:-GPUtil @ git+https://github.com/mathoudebine/gputil.git@1.4.1-py3.13}"
 
 log() { echo "bc250_python: $*" >&2; }
 works() { [[ -n "$1" && -x "$1" ]] && "$1" -c "import importlib, sys; [importlib.import_module(m) for m in sys.argv[1:]]" \
@@ -37,18 +40,34 @@ find_python() {  # the app's venv first, then the system's Python if the librari
 build_venv() {
   local system
   system="$(command -v python3)" || { log "no python3 on this system"; return 1; }
-  if [[ -e "$VENV" ]]; then
-    log "$VENV can't run the monitor with $("$system" --version 2>&1) (its libraries were installed for another" \
-        "Python): rebuilding it"
+  if "$VENV/bin/python" -m pip --version >/dev/null 2>&1; then  # a venv of this Python, a library missing: complete it
+    log "completing the monitor's Python libraries in $VENV"
   else
-    log "installing the monitor's Python libraries in $VENV (private to the app, nothing system-wide)"
+    if [[ -e "$VENV" ]]; then
+      log "$VENV can't run the monitor with $("$system" --version 2>&1) (its libraries were installed for another" \
+          "Python): rebuilding it"
+    else
+      log "installing the monitor's Python libraries in $VENV (private to the app, nothing system-wide)"
+    fi
+    "$system" -m venv --clear "$VENV" || { log "python3 -m venv failed"; return 1; }
+    "$VENV/bin/python" -m pip install --quiet --disable-pip-version-check --upgrade pip || true
   fi
-  "$system" -m venv --clear "$VENV" || { log "python3 -m venv failed"; return 1; }
-  "$VENV/bin/python" -m pip install --quiet --disable-pip-version-check --upgrade pip || true
   # --prefer-binary: a slightly older release with a ready-made package rather than a newer one to compile
-  "$VENV/bin/python" -m pip install --quiet --disable-pip-version-check --prefer-binary $PACKAGES \
+  "$VENV/bin/python" -m pip install --quiet --disable-pip-version-check --prefer-binary $PACKAGES "$GPUTIL" \
     || { log "pip could not install the libraries (see above)"; return 1; }
-  works "$VENV/bin/python" || { log "the libraries are still incomplete in $VENV"; return 1; }
+  works "$VENV/bin/python" || { log "the libraries are still incomplete in $VENV: $(missing "$VENV/bin/python")"; return 1; }
+}
+
+missing() {  # the modules a Python can't import
+  "$1" -c "
+import importlib, sys
+gone = []
+for m in sys.argv[1:]:
+    try:
+        importlib.import_module(m)
+    except Exception:
+        gone.append(m)
+print(' '.join(gone))" $MODULES 2>&1
 }
 
 PYTHON="$(find_python)" || { build_venv >&2 && PYTHON="$VENV/bin/python"; } || {  # (stdout: only the path)
