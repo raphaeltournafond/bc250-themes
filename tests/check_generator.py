@@ -63,6 +63,15 @@ def live_boxes(theme_yaml):
             boxes.append((f"seismograph {name}", x, top, x + w, y + h))
         x, bl, xr = seismo["HEADER"]
         boxes.append(("seismograph header", x, bl - 11, xr, bl + 3))
+    orbit = custom.get("Bc250Orbit")
+    if orbit:
+        x, y, w, h = orbit["MAP"]
+        boxes.append(("orbit map", x, y, x + w, y + h))
+        for name in ("CARD", "PASS"):  # (their headings are printed on the background)
+            x, y, w, h = orbit[name]
+            boxes.append((f"orbit {name.lower()}", x, y + 14, x + w, y + h))
+        x, bl, xr = orbit["HEADER"]
+        boxes.append(("orbit header", x, bl - 11, xr, bl + 3))
     horror = custom.get("Bc250Horror")
     if horror:
         x, y, w, h = horror["FEED"]

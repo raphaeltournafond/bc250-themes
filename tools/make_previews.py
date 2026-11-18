@@ -18,6 +18,7 @@ from common import THEMES  # noqa: E402
 from run import prepare_app, test_env  # noqa: E402
 
 PREVIEW_OPTIONS = ["--user", "rafale", "--host", "bazzite2"]  # the names the README previews have always shown
+THEME_PREVIEW_OPTIONS = {"orbit": ["--orbit-lat", "48.8584", "--orbit-lon", "2.2945"]}  # passes over the Eiffel Tower
 PREVIEWS = ("preview.png", "preview_portrait.png", "preview_encounter.png", "splash_preview.gif",
             "splash_preview_portrait.gif")
 
@@ -78,10 +79,11 @@ def main():
             continue
         for portrait, suffix in ((False, ""), (True, "_portrait")):
             orientation = ["--portrait"] if portrait else []
+            options = PREVIEW_OPTIONS + THEME_PREVIEW_OPTIONS.get(theme, [])
             check(app, env, "check_boot.py", theme, *orientation,
-                  "--gif", os.path.join(committed, f"splash_preview{suffix}.gif"), "--", *PREVIEW_OPTIONS)
+                  "--gif", os.path.join(committed, f"splash_preview{suffix}.gif"), "--", *options)
             check(app, env, "check_app.py", theme, *orientation,
-                  "--screenshot", os.path.join(committed, f"preview{suffix}.png"), "--", *PREVIEW_OPTIONS)
+                  "--screenshot", os.path.join(committed, f"preview{suffix}.png"), "--", *options)
             print(f"{folder}: previews{' (portrait)' if portrait else ''}", flush=True)
         if theme == "horror":
             horror_encounter(committed)

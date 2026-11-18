@@ -90,6 +90,13 @@ def main():
                 ok &= report(b._Seismo.played >= 1 and b._Seismo.rows_started >= 3 and len(b._QuakeFeed.quakes) >= 5,
                              f"{name}: the pen wrote {b._Seismo.rows_started} lines and played {b._Seismo.played} quake, "
                              f"{len(b._QuakeFeed.quakes)} on the map")
+            if args.theme == "orbit" and not args.screenshot:
+                el = b._IssElements.usable()
+                where = b._Sky.position(el, time.time()) if el else None
+                ok &= report(el is not None and b._Tracker.frames >= 20,
+                             f"{name}: tracked the ISS for {b._Tracker.frames} frames"
+                             + (f", now at {b._degrees_text(where['lat'], where['lon'])}, {where['alt']:.0f} km up"
+                                if where else ", without elements"))
             if args.theme == "horror" and not args.screenshot:
                 gentle = "--no-jumpscare" in args.extra
                 ok &= report(b._Horror.moves >= 3 and b._Horror.whispers >= 1 and (b._Horror.scares == 0) == gentle,

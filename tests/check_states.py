@@ -244,4 +244,46 @@ assert b._short_place("78 km SSW of Neiafu, Tonga") == "Neiafu, Tonga" and b._sh
 assert abs(b._distance_km(48.86, 2.35, 40.71, -74.0) - 5837) < 30, "Paris to New York"
 print("PASS states: earthquake feed", flush=True)
 
+
+# the ISS: its elements read from a two-line set (a damaged one refused), and what is worked out from them here
+I, Sky = b._IssElements, b._Sky
+with open(os.path.join(common.FIXTURES, "iss.tle"), encoding="ascii") as f:
+    tle = f.read()
+el = I.parse(tle)
+assert el and el["inclination"] == 51.6317 and el["revolution"] == 59562 and abs(el["motion"] - 15.49450921) < 1e-9
+epoch = datetime.datetime(2026, 11, 18, 4, 9, 8, 663616, tzinfo=datetime.timezone.utc).timestamp()
+assert abs(el["epoch"] - epoch) < 0.01 and abs(el["eccentricity"] - 0.0007376) < 1e-12 and el["ndot2"] == 0.00012098
+damaged = tle.replace("51.6317", "51.6318")
+assert I.parse(damaged) is None, "a wrong checksum is refused"
+assert I.parse("ISS\nnot a TLE\n") is None and I.parse("") is None
+assert I.parse("junk\n" + damaged + tle)["raan"] == 258.0725, "the first valid set is taken"
+# where it is, against SGP4 (the reference propagator) on the same elements: a few km over three days
+for hours, reference in ((0, (-1404.0, -6646.6, -0.0)), (24, (1828.3, 6548.0, -191.8)), (72, (2664.9, 6233.7, -543.4))):
+    off = math.dist(Sky.position(el, epoch + hours * 3600)["eci"], reference)
+    assert off < 25, f"{off:.0f} km from SGP4 after {hours} h"
+orbit = [Sky.position(el, epoch + 60 * m) for m in range(94)]
+assert all(405 < p["alt"] < 440 and 27_400 < p["speed"] * 3600 < 27_700 for p in orbit), "altitude and speed"
+assert 51.0 < max(abs(p["lat"]) for p in orbit) < 52.0, "it goes no further north or south than its inclination"
+assert abs(orbit[0]["period"] - 92.9) < 0.1 and orbit[0]["orbit"] == 59562 and orbit[-1]["orbit"] == 59563
+here = orbit[30]
+assert Sky.look(here["lat"], here["lon"], Sky.site(here["lat"], here["lon"]), here["ecef"])[1] > 89, "overhead"
+# the sun: overhead on the tropic at the solstice, on the equator at the equinox; the Earth's shadow
+noon = lambda day: datetime.datetime.fromisoformat(day + "T12:00:00+00:00").timestamp()
+lat, lon = Sky.subsolar(noon("2026-06-21"))
+assert abs(lat - 23.44) < 0.05 and abs(lon) < 1, (lat, lon)
+assert abs(Sky.subsolar(noon("2026-03-20"))[0]) < 0.2
+sun = Sky.sun(noon("2026-06-21"))
+behind = tuple(-6800 * c for c in sun)
+assert Sky.sunlit(tuple(6800 * c for c in sun), sun) and not Sky.sunlit(behind, sun), "lit facing the sun, dark behind"
+assert Sky.sunlit((behind[0] + 7000 * sun[1], behind[1] - 7000 * sun[0], behind[2]), sun), "beside the shadow: lit"
+# its passes over Paris from the elements' epoch: rises, highest point, which ones can be seen
+passes = Sky.passes(el, 48.8584, 2.2945, epoch, hours=24)
+assert 4 <= len(passes) <= 8 and all(2 * 60 < p["set"] - p["rise"] < 12 * 60 for p in passes), passes
+assert all(Sky.MIN_EL <= p["peak_el"] <= 90 and p["rise"] < p["peak"] < p["set"] for p in passes)
+first = datetime.datetime(2026, 11, 18, 15, 9, 2, tzinfo=datetime.timezone.utc).timestamp()
+assert abs(passes[0]["rise"] - first) < 20, datetime.datetime.fromtimestamp(passes[0]["rise"], datetime.timezone.utc)
+assert [p["visible"] for p in passes[:3]] == [False, True, True], "a daylight pass, then two at dusk"
+assert b._age(1500) == "25 MIN" and b._age(3 * 3600 + 5) == "3 H" and b._age(4 * 86400) == "4 DAYS"
+print("PASS states: ISS elements, orbit, sun and passes", flush=True)
+
 shutil.rmtree(tmp)

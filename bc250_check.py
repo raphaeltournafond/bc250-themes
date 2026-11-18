@@ -274,6 +274,24 @@ def main():
         except Exception as e:
             report(WARN, "Earthquake feed (USGS)", f"no answer ({e}); the pen keeps writing this machine's own tremor")
 
+    # --- Orbit theme: can the ISS's elements be fetched, and when does it pass over? ---
+    orbit = _radar_spec("Bc250Orbit")
+    if orbit:
+        try:
+            elements, now = b._IssElements.fetch(), time.time()
+            where = b._Sky.position(elements, now)
+            report(OK, f"ISS elements ({b._IssElements.source})",
+                   f"{b._age(now - elements['epoch']).lower()} old; the ISS is at "
+                   f"{b._degrees_text(where['lat'], where['lon'])}, {where['alt']:.0f} km up")
+            if "LAT" in orbit:
+                passes = b._Sky.passes(elements, float(orbit["LAT"]), float(orbit["LON"]), now)
+                seen = [p for p in passes if p["visible"]]
+                when = lambda p: time.strftime("%a %H:%M", time.localtime(p["rise"]))
+                report(OK, "ISS passes", f"{len(passes)} in the next {b._Sky.HOURS // 24} days, {len(seen)} you can see"
+                       + (f", the next on {when(seen[0])} (up to {seen[0]['peak_el']:.0f}°)" if seen else ""))
+        except Exception as e:
+            report(WARN, "ISS elements", f"no answer ({e}); the theme keeps the last ones it saved")
+
     # --- Screen serial port + permissions ---
     ports = glob.glob("/dev/ttyACM*") + glob.glob("/dev/ttyUSB*")
     report(OK if ports else WARN, "Screen serial port", ", ".join(ports) or "none found: is the screen plugged in?")

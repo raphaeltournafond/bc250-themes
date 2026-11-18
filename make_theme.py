@@ -1,6 +1,6 @@
 # BC-250 theme generator for turing-smart-screen-python: renders the artwork and writes theme.yaml of one theme
 # from a single layout, so static art and live widgets always line up.
-#     python3 make_theme.py --app ~/turing-smart-screen-python [--theme phosphor|gameboy|retrowave|videotex|mission|minecraft|nixie|radar|halloween|christmas|horror|seismograph] [--portrait] [...]
+#     python3 make_theme.py --app ~/turing-smart-screen-python [--theme phosphor|gameboy|retrowave|videotex|mission|minecraft|nixie|radar|halloween|christmas|horror|seismograph|orbit] [--portrait] [...]
 #     python3 make_theme.py --help
 # The theme is written to <app>/res/themes/BC250-<Theme> (fonts are read from <app>/res/fonts).
 #
@@ -51,6 +51,7 @@ RADAR_LAT, RADAR_LON = 49.0097, 2.5479  # radar theme: centre of the scope (defa
 RADAR_RANGE = 50  # km
 SEISMO_STATION = None  # seismograph theme: (lat, lon) to show each quake's distance from, kept on the machine
 SEISMO_MIN_MAG = 2.5  # seismograph theme: the smallest quake it records
+ORBIT_SITE = None  # orbit theme: (lat, lon) to work out the ISS's passes over, kept on the machine
 
 # --- Colours ----------------------------------------------------------------------------------------------------------
 DMG = [(155, 188, 15), (139, 172, 15), (48, 98, 48), (15, 56, 15)]  # Game Boy DMG: lightest .. darkest
@@ -111,6 +112,10 @@ SKINS = {
     "seismograph": dict(folder="BC250-Seismograph", bg=(18, 20, 20), dim=(112, 116, 104), mid=(200, 168, 100),
                         value=(234, 228, 208), accent=(220, 70, 48), cold=(156, 196, 156), hot=(236, 176, 84),
                         alert=(240, 54, 44), ink=(18, 20, 20), grid_dot=(40, 44, 42), bar=(200, 168, 100), palette=None),
+    # Orbit: a ground station's tracking display, deep navy, sky blue and the amber of the ISS's solar wings
+    "orbit": dict(folder="BC250-Orbit", bg=(7, 12, 22), dim=(86, 108, 134), mid=(122, 172, 222), value=(226, 236, 246),
+                  accent=(255, 190, 70), cold=(120, 200, 170), hot=(240, 170, 80), alert=(240, 64, 56), ink=(7, 12, 22),
+                  grid_dot=(24, 38, 58), bar=(122, 172, 222), palette=None),
 }
 SKIN_NAME = "phosphor"
 SKIN = SKINS[SKIN_NAME]
@@ -223,9 +228,9 @@ def set_layout(portrait: bool, skin: str = "phosphor"):
     global PROMPT_Y, PROMPT_LABEL_BL, PROMPT_VALUE_BL, PROMPT_COLS_BL, PROMPT_X, PROMPT_XR, PROMPT_AREA
     global PROMPT_COL1_XR, PROMPT_COLS, SPLASH_LAYOUT, RADAR
     PORTRAIT, SKIN_NAME, SKIN = portrait, skin, SKINS[skin]
-    gameboy, retro, videotex, mission, blocky, nixie, radar, haunted, festive, horror, seismo = (skin == name for name in (
-        "gameboy", "retrowave", "videotex", "mission", "minecraft", "nixie", "radar", "halloween", "christmas", "horror",
-        "seismograph"))
+    gameboy, retro, videotex, mission, blocky, nixie, radar, haunted, festive, horror, seismo, orbit = (
+        skin == name for name in ("gameboy", "retrowave", "videotex", "mission", "minecraft", "nixie", "radar",
+                                  "halloween", "christmas", "horror", "seismograph", "orbit"))
     card = gameboy_card if gameboy else (lambda *box: phosphor_panel(*box, col_a_offset=130 if portrait else 100))
     if not portrait:  # 480x320: CPU and GPU side by side, 3x2 grid, one-line prompt
         W, H = 480, 320
@@ -387,6 +392,12 @@ def set_layout(portrait: bool, skin: str = "phosphor"):
         SPLASH_LAYOUT = dict(row_bl=py + (24 if portrait else 20), row_step=22 if portrait else 17, label_x=px + 10,
                              value_x=px + (66 if portrait else 76), status_xr=px + pw - 10, progress_bl=0, status_bl=0,
                              bar=(0, 0, 0, 0))
+    if orbit:  # the map on top, the ISS's card, the next pass and the readings under it; the boot's console over them
+        DATE_XR = None
+        lx1, ly1, lx2, _ = ORBIT_LAYOUT[portrait]["log"]
+        col_w = (lx2 - lx1) // ORBIT_LAYOUT[portrait]["log_columns"]
+        SPLASH_LAYOUT = dict(row_bl=ly1 + 14, row_step=ORBIT_LAYOUT[portrait]["log_step"], label_x=lx1 + 8,
+                             value_x=lx1 + 62, status_xr=lx1 + col_w - 8, progress_bl=0, status_bl=0, bar=(0, 0, 0, 0))
     if radar:  # scope on the left (top in portrait), the flight card, list, CPU/GPU and prompt beside (below) it
         RADAR.update(RADAR_LAYOUT[portrait])
         DATE_XR = None
@@ -594,6 +605,12 @@ SEISMO_WORDS = {"boot": "CALIBRATING", "now-playing": "EPICENTRE", "downloading"
                 "idle": "BACKGROUND NOISE", "idle-text": "all stations quiet"}
 
 
+# Orbit status line wording ("ON BOARD Hades II"; idle: "STATION KEEPING" / "all systems nominal")
+ORBIT_WORDS = {"boot": "ACQUIRING", "now-playing": "ON BOARD", "downloading": "UPLINK", "installing": "DOCKING",
+               "verifying": "SYSTEMS CHECK", "fossilize_replay": "CALIBRATING SHADERS", "last-session": "LAST EXPEDITION",
+               "idle": "STATION KEEPING", "idle-text": "all systems nominal"}
+
+
 # Radar status line wording
 RADAR_WORDS = {"boot": "STARTING", "now-playing": "NOW PLAYING", "downloading": "DOWNLOADING", "installing": "INSTALLING",
                "verifying": "VERIFYING", "fossilize_replay": "SHADERS", "last-session": "LAST GAME", "idle": "STANDBY",
@@ -608,7 +625,8 @@ def videotex_code(logo):
 def prompt_prefix(user, prompt):
     """What precedes the live command word in the prompt's label row."""
     return {"gameboy": user.upper(), "retrowave": f"1UP {user.upper()}", "videotex": "", "mission": "",
-            "minecraft": "", "nixie": "", "radar": "", "halloween": "", "christmas": "", "horror": "", "seismograph": ""}.get(SKIN_NAME, prompt)
+            "minecraft": "", "nixie": "", "radar": "", "halloween": "", "christmas": "", "horror": "", "seismograph": "",
+            "orbit": ""}.get(SKIN_NAME, prompt)
 
 
 def build_theme(title, prompt, user):
@@ -656,6 +674,9 @@ def build_theme(title, prompt, user):
     if SKIN_NAME == "seismograph":
         prompt_spec.update({"CMD_WORDS": SEISMO_WORDS, "LABEL_COLOR": rgb(SKIN["mid"]),
                             "COL_WORDS": {"SESSION": "DURATION", "TIME": "DURATION"}})
+    if SKIN_NAME == "orbit":  # mission elapsed time
+        prompt_spec.update({"CMD_WORDS": ORBIT_WORDS, "LABEL_COLOR": rgb(SKIN["mid"]),
+                            "COL_WORDS": {"SESSION": "MET", "TIME": "MET"}})
     if SKIN_NAME == "horror":
         prompt_spec.update({"CMD_WORDS": HORROR_WORDS, "LABEL_COLOR": rgb(SKIN["mid"]),
                             "COL_WORDS": {"SESSION": "YOU STAYED", "TIME": "YOU STAYED"}})
@@ -687,7 +708,7 @@ def build_theme(title, prompt, user):
         "IMAGE_NOLOGO": "splash_nologo.png", "LOGO_TEXT": LOGO,
     }
     if SKIN_NAME not in ("retrowave", "videotex", "mission", "minecraft", "nixie", "radar", "halloween",
-                         "christmas", "horror", "seismograph"):  # pixel-font logo
+                         "christmas", "horror", "seismograph", "orbit"):  # pixel-font logo
         splash.update({"LOGO_SIZE": logo_size(LOGO), "LOGO_BL": logo_baseline(logo_size(LOGO)),
                        "LOGO_BOX": list(sl["logo_box"])})
     if SKIN_NAME == "phosphor":  # the dark tube the warm-up starts from: only the text has to be sent after it
@@ -815,6 +836,8 @@ def build_theme(title, prompt, user):
         theme = horror_theme(theme, user)
     if SKIN_NAME == "seismograph":
         theme = seismo_theme(theme, title)
+    if SKIN_NAME == "orbit":
+        theme = orbit_theme(theme, title)
     return theme
 
 
@@ -918,7 +941,7 @@ class Canvas:
     def finish(self):
         if SKIN_NAME == "gameboy":
             return self.lcd_grid(self.img)
-        if SKIN_NAME in ("videotex", "minecraft", "nixie", "radar", "horror", "seismograph"):  # flat colours, nothing else
+        if SKIN_NAME in ("videotex", "minecraft", "nixie", "radar", "horror", "seismograph", "orbit"):  # flat colours
             return self.img
         if SKIN_NAME in ("halloween", "christmas"):  # candle-lit text and dark corners, no scanlines
             img = ImageChops.add(self.img, self.glow.filter(ImageFilter.GaussianBlur(2)).point(lambda v: int(v * 0.4)))
@@ -2209,21 +2232,27 @@ SM_WORLD = (
 )
 
 
+def world_map(w, h, project, sea, land, coast, graticule, k=4):
+    """The continents of SM_WORLD on a grid every 30 degrees, drawn k times larger then reduced. project(lon, lat)
+    gives the point in the large picture."""
+    image = Image.new("RGB", (w * k, h * k), sea)
+    d = ImageDraw.Draw(image)
+    for lon in range(-150, 180, 30):
+        d.line((project(lon, 90), project(lon, -90)), fill=graticule, width=k // 2)
+    for lat in range(-60, 90, 30):
+        d.line((project(-180, lat), project(180, lat)), fill=graticule, width=k // 2)
+    for shape in SM_WORLD:
+        points = [project(*p) for p in shape]
+        d.polygon(points, fill=land)
+        d.line(points + points[:1], fill=coast, width=k)
+    return image.resize((w, h), Image.LANCZOS)
+
+
 def sm_world(w, h):
     """The world map: a plain latitude and longitude projection, 2:1."""
     k = 4
-    image = Image.new("RGB", (w * k, h * k), SM_SEA)
-    d = ImageDraw.Draw(image)
-    project = lambda lon, lat: ((lon + 180) / 360 * w * k, (90 - lat) / 180 * h * k)
-    for lon in range(-150, 180, 30):
-        d.line((project(lon, 90), project(lon, -90)), fill=SM_GRATICULE, width=k // 2)
-    for lat in range(-60, 90, 30):
-        d.line((project(-180, lat), project(180, lat)), fill=SM_GRATICULE, width=k // 2)
-    for shape in SM_WORLD:
-        points = [project(*p) for p in shape]
-        d.polygon(points, fill=SM_LAND)
-        d.line(points + points[:1], fill=SM_COAST, width=k)
-    return image.resize((w, h), Image.LANCZOS)
+    return world_map(w, h, lambda lon, lat: ((lon + 180) / 360 * w * k, (90 - lat) / 180 * h * k),
+                     SM_SEA, SM_LAND, SM_COAST, SM_GRATICULE, k)
 
 
 def render_background_seismograph(title):
@@ -2299,6 +2328,226 @@ def seismo_theme(theme, title):
     theme["bc250_splash"].update({"STYLE": "seismograph", "IMAGE": "background.png", "PAPER": spec["PAPER"],
                                   "ROWS_ON_PAPER": spec["ROWS"], "INKS": spec["INKS"], "MIN_MAG": spec["MIN_MAG"],
                                   "MARGIN": spec["MARGIN"]})
+    return theme
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Orbit artwork: a ground station's world map (the sensors put the night, the ISS and its track on it), the cards and
+# the chart of the sky passes are drawn on
+# ---------------------------------------------------------------------------------------------------------------------
+ORBIT_LAYOUT = {  # landscape, portrait. The map is cropped to the latitudes that matter: the ISS flies within 52°
+    False: dict(map=(4, 18, 472, 168), lat_top=72, card=(4, 190, 166, 86), card_rows=(40, 54, 67, 80),
+                pass_=(176, 190, 146, 86), pass_heading=(244, 202), sky=(208, 241, 28),
+                slots=((244, 226, 24, "ls"), (244, 241, 12, "ls"), (244, 255, 12, "ls"), (244, 269, 12, "ls")),
+                labels=(("CPU", 326, 210, "ls"), ("GPU", 326, 236, "ls"), ("RAM", 326, 262, "ls")),
+                cpu=((352, 212), (474, 212)), gpu=((352, 238), (474, 238)), ram=(352, 264), pwr=(474, 264),
+                lines=((324, 190, 324, 276), (172, 190, 172, 276)), log=(4, 190, 476, 276), log_columns=2, log_step=13),
+    True: dict(map=(4, 18, 312, 138), lat_top=80, card=(4, 160, 154, 142), card_rows=(40, 58, 74, 90, 106, 122),
+               pass_=(162, 160, 154, 142), pass_heading=(164, 172), sky=(239, 222, 36),
+               slots=((166, 284, 24, "ls"), (314, 274, 12, "rs"), (314, 288, 12, "rs"), (166, 299, 12, "ls")),
+               labels=(("CPU", 8, 324, "ls"), ("GPU", 166, 324, "ls"), ("RAM", 8, 368, "ls"), ("APU W", 166, 368, "ls")),
+               cpu=((8, 348), (154, 348)), gpu=((166, 348), (312, 348)), ram=(8, 392), pwr=(312, 392),
+               lines=((160, 160, 160, 302), (160, 310, 160, 412), (4, 306, 316, 306)), log=(4, 160, 316, 412),
+               log_columns=1, log_step=16),
+}
+OB_SEA, OB_LAND, OB_COAST, OB_GRATICULE = (16, 44, 76), (48, 88, 74), (88, 132, 124), (28, 58, 90)
+OB_NIGHT = (0.32, 0.38, 0.55)  # what the night leaves of each colour
+OB_SKY_RING = (36, 58, 88)
+# what the ISS can fly over: SM_WORLD's shapes (in order), the big ones cut further where it makes sense, then the seas
+OB_SHAPES = ("NORTH AMERICA", "GREENLAND", "SOUTH AMERICA", "AFRICA", "EURASIA", "AUSTRALIA", "THE BRITISH ISLES",
+             "IRELAND", "ICELAND", "JAPAN", "INDONESIA", "BORNEO", "INDONESIA", "INDONESIA", "NEW GUINEA",
+             "THE PHILIPPINES", "NEW ZEALAND", "MADAGASCAR", "CUBA", "ANTARCTICA")
+OB_REGIONS = ("", "CANADA", "ALASKA", "THE UNITED STATES", "MEXICO", "CENTRAL AMERICA", "GREENLAND", "SOUTH AMERICA",
+              "NORTH AFRICA", "AFRICA", "EUROPE", "TURKEY", "RUSSIA", "THE MIDDLE EAST", "CENTRAL ASIA", "INDIA",
+              "CHINA", "MONGOLIA", "KOREA", "SOUTHEAST ASIA", "AUSTRALIA", "THE BRITISH ISLES", "IRELAND", "ICELAND",
+              "JAPAN", "INDONESIA", "BORNEO", "NEW GUINEA", "THE PHILIPPINES", "NEW ZEALAND", "MADAGASCAR", "CUBA",
+              "ANTARCTICA", "THE N. PACIFIC", "THE S. PACIFIC", "THE N. ATLANTIC", "THE S. ATLANTIC",
+              "THE INDIAN OCEAN", "THE MEDITERRANEAN", "THE SOUTHERN OCEAN", "THE ARCTIC OCEAN", "THE CARIBBEAN",
+              "THE GULF OF MEXICO", "THE BAY OF BENGAL", "THE ARABIAN SEA", "THE SOUTH CHINA SEA")
+
+
+def ob_land(shape, lon, lat):
+    """The name of a point of land, from its shape and where it lies (roughly: the map is coarse too)."""
+    if shape == "NORTH AMERICA":
+        if lon < -141:
+            return "ALASKA"
+        if lat >= 49 or (lon > -83 and lat >= 45.5):
+            return "CANADA"
+        if lat < 18.5 and lon > -94:
+            return "CENTRAL AMERICA"
+        if (lat < 32.5 and lon <= -106.5) or (lat < 29.5 and lon < -97) or (lat < 21.5 and lon < -86):
+            return "MEXICO"
+        return "THE UNITED STATES"
+    if shape == "AFRICA":
+        return "NORTH AFRICA" if lat >= 15 else "AFRICA"
+    if shape == "EURASIA":
+        if 26 <= lon < 45 and 36 <= lat < 42:
+            return "TURKEY"
+        if lon < 40 and lat >= 36:
+            return "EUROPE"
+        if lat >= 50:
+            return "RUSSIA"
+        if 35 <= lon < 62 and lat < 42:
+            return "THE MIDDLE EAST"
+        if 67 <= lon < 92 and lat < 30:
+            return "INDIA"
+        if lon >= 97 and lat < 22:
+            return "SOUTHEAST ASIA"
+        if 125 <= lon < 131 and 34 <= lat < 43:
+            return "KOREA"
+        if 88 <= lon < 120 and lat >= 42:
+            return "MONGOLIA"
+        if lon >= 73 and lat >= 18:
+            return "CHINA"
+        return "CENTRAL ASIA"
+    return shape
+
+
+def ob_regions():
+    """What lies under each degree of the map (360x180, one byte per degree: an index into OB_REGIONS). Land comes
+    from the map's own shapes; the oceans are filled from a point in each, with walls where they meet."""
+    from collections import deque
+    shapes = Image.new("L", (360, 180), 0)
+    d = ImageDraw.Draw(shapes)
+    for n, shape in enumerate(SM_WORLD, 1):
+        d.polygon([(lon + 180, 90 - lat) for lon, lat in shape], fill=n)
+    land = shapes.load()
+    out = Image.new("L", (360, 180), 0)
+    px = out.load()
+    centre = lambda i, j: (-179.5 + i, 89.5 - j)
+    ocean = {}
+    walls = set()
+    for lon, lats in ((-6, range(33, 41)), (20, range(-58, -33)), (147, range(-58, -35)), (142, range(-17, -7)),
+                      (-68, range(-58, -53))):  # Gibraltar, south of Africa, of Tasmania, Torres Strait, Drake passage
+        walls.update((lon + 180, 90 - lat) for lat in lats)
+    queue = deque()
+    for name, (lon, lat) in (("PACIFIC", (-150, 0)), ("ATLANTIC", (-30, 0)), ("INDIAN", (75, -15)),
+                             ("MEDITERRANEAN", (18, 35))):
+        queue.append((lon + 180, 90 - lat, name))
+    while queue:  # every sea point goes to the ocean that reaches it first
+        i, j, name = queue.popleft()
+        if not (0 <= j < 180) or land[i % 360, j] or (i % 360, j) in walls or (i % 360, j) in ocean:
+            continue
+        ocean[(i % 360, j)] = name
+        for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            queue.append(((i + di) % 360, j + dj, name))
+    for j in range(180):
+        for i in range(360):
+            lon, lat = centre(i, j)
+            if land[i, j]:
+                name = ob_land(OB_SHAPES[land[i, j] - 1], lon, lat)
+            elif lat > 66:
+                name = "THE ARCTIC OCEAN"
+            elif lat < -58:
+                name = "THE SOUTHERN OCEAN"
+            else:
+                sea = ocean.get((i, j), "PACIFIC")
+                if 95 <= lon < 130 and -9 <= lat < 25:  # between the islands, and the sea north of them
+                    name = "INDONESIA" if lat < 0 else "THE SOUTH CHINA SEA" if lon < 121 else "THE N. PACIFIC"
+                elif sea == "ATLANTIC" and 18 <= lat < 31 and -98 <= lon < -81:
+                    name = "THE GULF OF MEXICO"
+                elif sea == "ATLANTIC" and 9 <= lat < 22 and -88 <= lon < -60:
+                    name = "THE CARIBBEAN"
+                elif sea == "INDIAN" and 5 <= lat and 78 <= lon < 100:
+                    name = "THE BAY OF BENGAL"
+                elif sea == "INDIAN" and 5 <= lat and 50 <= lon < 78:
+                    name = "THE ARABIAN SEA"
+                elif sea in ("PACIFIC", "ATLANTIC"):
+                    name = f"THE {'N' if lat >= 0 else 'S'}. {sea}"
+                elif sea == "INDIAN":
+                    name = "THE INDIAN OCEAN"
+                else:
+                    name = "THE MEDITERRANEAN"
+            px[i, j] = OB_REGIONS.index(name)
+    return out
+
+
+def ob_world(w, h, lat_top):
+    k = 4
+    s = w * k / 360
+    return world_map(w, h, lambda lon, lat: ((lon + 180) * s, (lat_top - lat) * s), OB_SEA, OB_LAND, OB_COAST,
+                     OB_GRATICULE, k)
+
+
+def render_background_orbit(title):
+    """The ground station: the map in daylight (the sensors bring the night), the cards' headings, the chart of the
+    sky (the horizon round the edge, 30° and 60° up, straight up in the middle, north on top), the readings."""
+    ol = ORBIT_LAYOUT[PORTRAIT]
+    c = Canvas()
+    c.label(6, HEADER_BL, title, SKIN["mid"], glow=False)
+    c.d.line((0, HEADER_H + 1, W, HEADER_H + 1), fill=SKIN["grid_dot"])
+    x, y, w, h = ol["map"]
+    c.img.paste(ob_world(w, h, ol["lat_top"]), (x, y))
+    c.d.rectangle((x - 1, y - 1, x + w, y + h), outline=SKIN["dim"])
+    cx, cy, _, _ = ol["card"]
+    c.label(cx + 2, cy + 12, "ISS (ZARYA)", SKIN["dim"], glow=False)
+    c.label(*ol["pass_heading"], "NEXT PASS", SKIN["dim"], glow=False)
+    sx, sy, r = ol["sky"]
+    for ring in (r / 3, 2 * r / 3):
+        for a in range(0, 360, 15):
+            c.d.point((round(sx + ring * math.sin(math.radians(a))), round(sy - ring * math.cos(math.radians(a)))),
+                      fill=OB_SKY_RING)
+    c.d.ellipse((sx - r, sy - r, sx + r, sy + r), outline=SKIN["dim"])
+    for a in (90, 180, 270):  # east, south, west: a tick; north: its letter
+        dx, dy = math.sin(math.radians(a)), -math.cos(math.radians(a))
+        c.d.line((round(sx + dx * (r - 3)), round(sy + dy * (r - 3)), round(sx + dx * r), round(sy + dy * r)),
+                 fill=SKIN["dim"])
+    c.label(sx, sy - r - 2, "N", SKIN["dim"], anchor="ms", glow=False)
+    c.d.point((sx, sy), fill=SKIN["dim"])
+    for word, lx, bl, anchor in ol["labels"]:
+        c.label(lx, bl, word, SKIN["dim"], anchor=anchor, glow=False)
+    for line_ in ol["lines"]:
+        c.d.line(line_, fill=SKIN["grid_dot"])
+    c.dotted_hline(4, W - 4, PROMPT_Y)
+    return c.finish()
+
+
+def orbit_spec(title):
+    ol = ORBIT_LAYOUT[PORTRAIT]
+    header_x = 6 + len(title) * CH[S] + 12
+    spec = {"MAP": list(ol["map"]), "LAT_TOP": ol["lat_top"], "NIGHT": list(OB_NIGHT), "REGIONS_IMAGE": "regions.png",
+            "REGIONS": list(OB_REGIONS), "CARD": list(ol["card"]), "CARD_ROWS": list(ol["card_rows"]),
+            "PASS": list(ol["pass_"]), "SKY": list(ol["sky"]), "PASS_SLOTS": [list(s) for s in ol["slots"]],
+            "PASS_CHARS": 12, "HEADER": [header_x, HEADER_BL, CLOCK_XR - CLOCK_CHARS * CH[S] - 6], "FPS": 4, "TILE": 10,
+            "FONT": FONT, "BACKGROUND_IMAGE": "background.png",
+            "COLORS": {"BRIGHT": rgb(SKIN["value"]), "MID": rgb(SKIN["mid"]), "DIM": rgb(SKIN["dim"]),
+                       "AMBER": rgb(SKIN["accent"]), "RED": rgb(SKIN["alert"]), "TRACK": rgb((255, 200, 90)),
+                       "PAST": rgb((130, 160, 196)), "FOOTPRINT": rgb((150, 200, 245)), "SUN": rgb((255, 226, 110)),
+                       "SITE": rgb((110, 240, 200)), "PANEL": rgb((214, 160, 60)), "RING": rgb((200, 150, 60))}}
+    if ORBIT_SITE:
+        spec.update({"LAT": round(ORBIT_SITE[0], 4), "LON": round(ORBIT_SITE[1], 4)})
+    return spec
+
+
+def orbit_theme(theme, title):
+    """The orbit widget draws the map, the ISS and the two cards; the app keeps the clock, the readings, the status
+    line and the screen power."""
+    ol, custom = ORBIT_LAYOUT[PORTRAIT], theme["STATS"]["CUSTOM"]
+    heat = lambda at: dict(heat_colors(TEMP_COLD, TEMP_HOT, TEMP_ALERT), INK=rgb(SKIN["ink"]),
+                           HEAT_TEXT=text(at[0], at[1], M, 5, right=True))
+    load = lambda at: text(at[0], at[1], M, 4)
+    power = dict(heat_colors(POWER_LOW, (POWER_LOW + POWER_HIGH) // 2, POWER_HIGH),
+                 HEAT_TEXT=text(ol["pwr"][0], ol["pwr"][1], M, 5, right=True))
+    spec = orbit_spec(title)
+    theme["STATS"] = {
+        "CPU": {"PERCENTAGE": {"INTERVAL": 1, "TEXT": load(ol["cpu"][0])}},
+        "MEMORY": {"INTERVAL": 2, "VIRTUAL": {"PERCENT_TEXT": load(ol["ram"])}},
+        "DATE": {"INTERVAL": 1, "HOUR": {"TEXT": text(CLOCK_XR, HEADER_BL, S, CLOCK_CHARS, SKIN["value"], right=True,
+                                                      FORMAT="HH:mm:ss")}},
+        "CUSTOM": {
+            "INTERVAL": 1,
+            "Bc250CpuTemp": heat(ol["cpu"][1]),
+            "Bc250GpuTemp": heat(ol["gpu"][1]),
+            "Bc250GpuLoad": {"TEXT": load(ol["gpu"][0])},
+            "Bc250ApuPower": power,
+            "Bc250Orbit": spec,
+            "Bc250Prompt": custom["Bc250Prompt"],
+            "Bc250Screen": custom["Bc250Screen"],
+        },
+    }
+    theme["bc250_splash"].update({k: v for k, v in spec.items() if k != "BACKGROUND_IMAGE"})
+    theme["bc250_splash"].update({"STYLE": "orbit", "IMAGE": "background.png", "LOG": list(ol["log"]),
+                                  "LOG_COLUMNS": ol["log_columns"], "LOG_STEP": ol["log_step"]})
     return theme
 
 
@@ -3131,6 +3380,8 @@ if __name__ == "__main__":
     parser.add_argument("--seismo-lon", help="seismograph theme: your longitude (optional)")
     parser.add_argument("--seismo-min-mag", type=float, default=SEISMO_MIN_MAG,
                         help="seismograph theme: the smallest quake it records (default: %(default)s)")
+    parser.add_argument("--orbit-lat", help="orbit theme: your latitude, to show when the ISS passes over you (optional)")
+    parser.add_argument("--orbit-lon", help="orbit theme: your longitude (optional)")
     parser.add_argument("--no-jumpscare", action="store_true",
                         help="horror theme: no sudden face or bright flash when it reaches the camera")
     parser.add_argument("--radar-lat", default=str(RADAR_LAT),
@@ -3183,6 +3434,16 @@ if __name__ == "__main__":
             if not (-90 <= SEISMO_STATION[0] <= 90 and -180 <= SEISMO_STATION[1] <= 180):
                 parser.error("seismograph: latitude -90..90, longitude -180..180")
         SEISMO_MIN_MAG = args.seismo_min_mag
+    if SKIN_NAME == "orbit":
+        if bool(args.orbit_lat) != bool(args.orbit_lon):
+            parser.error("--orbit-lat and --orbit-lon go together")
+        if args.orbit_lat:
+            try:
+                ORBIT_SITE = (parse_coordinate(args.orbit_lat), parse_coordinate(args.orbit_lon))
+            except ValueError:
+                parser.error("--orbit-lat / --orbit-lon: use decimal degrees, e.g. 48.86 and 2.29")
+            if not (-90 <= ORBIT_SITE[0] <= 90 and -180 <= ORBIT_SITE[1] <= 180):
+                parser.error("orbit: latitude -90..90, longitude -180..180")
     if SKIN_NAME == "radar":
         try:
             center = (parse_coordinate(args.radar_lat), parse_coordinate(args.radar_lon))
@@ -3194,7 +3455,8 @@ if __name__ == "__main__":
         RADAR["terrain"] = radar_terrain(*center, args.radar_range, RADAR["scope"][2])
     title = (args.title or {"videotex": f"P250 {LOGO}", "mission": f"MCC {LOGO}", "radar": f"{LOGO} RADAR",
                             "halloween": f"HAUNTED {LOGO}", "christmas": f"MERRY {LOGO}",
-                            "horror": "CAM 04  SUB-LEVEL B2", "seismograph": f"STATION {LOGO}"}.get(SKIN_NAME)
+                            "horror": "CAM 04  SUB-LEVEL B2", "seismograph": f"STATION {LOGO}",
+                            "orbit": f"{LOGO} GROUND STATION"}.get(SKIN_NAME)
              or f"{LOGO}::{args.user.upper()}")[:28]
     prompt = f"{args.user}@{args.host}:~$"[:40]
 
@@ -3222,6 +3484,9 @@ if __name__ == "__main__":
         nologo.save(THEME_DIR / "splash_nologo.png")
     elif SKIN_NAME == "seismograph":
         render_background_seismograph(title).save(THEME_DIR / "background.png")
+    elif SKIN_NAME == "orbit":
+        render_background_orbit(title).save(THEME_DIR / "background.png")
+        ob_regions().save(THEME_DIR / "regions.png")
     elif SKIN_NAME == "horror":
         HR_TITLE, HR_JUMPSCARE = title, not args.no_jumpscare
         render_background_horror(title).save(THEME_DIR / "background.png")
@@ -3264,7 +3529,8 @@ if __name__ == "__main__":
              "halloween": "BC250-Halloween - pumpkins, cobwebs and a graveyard under the full moon",
              "christmas": "BC250-Christmas - snow, a lit tree and Santa's sleigh on a silent night",
              "horror": "BC250-Horror - a security camera, a corridor, and what moves when the lights go out",
-             "seismograph": "BC250-Seismograph - your machine's tremors and the world's real earthquakes on one drum"}
+             "seismograph": "BC250-Seismograph - your machine's tremors and the world's real earthquakes on one drum",
+             "orbit": "BC250-Orbit - a ground station tracking the ISS, and when it passes over you"}
     header = (f"# {names[SKIN_NAME]} for an AMD BC-250 Steam Machine\n"
               f"# Turing 3.5\" {'portrait' if PORTRAIT else 'landscape'}. GENERATED by make_theme.py: "
               "edit the script or its options and re-run it.\n"
