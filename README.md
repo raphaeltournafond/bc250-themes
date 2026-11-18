@@ -62,7 +62,7 @@ That's it: the screen now starts with the boot animation every time the BC-250 b
 ### What setup does
 
 - **Finds the app:** it uses `--app PATH` if given, then the folder from last time, then a `turing-smart-screen-python*` folder next to this one or in your home.
-- **Python libraries:** uses the Python that already has the app's libraries. If none does, it installs them into a private `.venv` inside the app folder (nothing system-wide).
+- **Python libraries:** uses the Python that already has the app's libraries. If none does, it installs them into a private `.venv` inside the app folder (nothing system-wide). When Bazzite upgrades its Python, the service rebuilds that `.venv` by itself at the next start (see [Troubleshooting](#troubleshooting)).
 - **Screen access:** checks your account can talk to the screen, and offers the fix if not (including the Bazzite/Fedora Atomic `dialout` group quirk).
 - **Theme:** installs it and builds the artwork with your username, hostname and options. It also sets `THEME` and the network interface in the app's `config.yaml`.
 - **Start at boot:** runs the monitor as a systemd user service, and restarts it after an update.
@@ -439,6 +439,7 @@ What all the themes show, each in its own style (see [Themes](#themes)):
 | Something shows `--` | run `cd <app folder> && python3 bc250_check.py`: it says what's missing and how to fix it |
 | No FPS | the launch option above is missing from that game. Don't use `no_display` in it: that stops MangoHud logging |
 | Screen stuck on "Please visit www.turzx.com" | `journalctl --user -u turing-monitor -n 50` shows why the monitor isn't running |
+| "Python 3.15 is not supported by this program" after a Bazzite update | update and re-run setup once: `git -C bc250-themes pull && bash bc250-themes/setup.sh`. Since then the service starts the monitor through `bc250_python.sh`. It rebuilds the app's `.venv` for the new Python, with libraries that have ready-made packages for it (this needs the network once). It also lets the app run on a Python newer than its release was tested with, and says so in the log. To start the monitor by hand: `bash <app folder>/bc250_python.sh <app folder> --run` |
 | Screen briefly shows the TURZX message again before the boot animation | set `RESET_ON_STARTUP: false` in the app's `config.yaml` |
 | GPU load shows `--%` | the monitor must run as the same user as Steam; setup's service does |
 | GPU clock shows `----` on a CPU-unlocked board (8C/16T) | the unlock makes the kernel misread it (between 0 and 100 MHz, whatever the real clock), so the screen leaves it out. For the real clock: `fix-freq = true` under `[gpu-usage]` in `cyan-skillfish-governor-smu`'s config, then restart that service |
@@ -450,6 +451,7 @@ What all the themes show, each in its own style (see [Themes](#themes)):
 | `setup.sh` | the one command: finds the app, Python, screen access, then runs the two scripts below and the check |
 | `install_bc250.sh` | copies the themes and sensors into the app, builds the chosen theme with your options and selects it |
 | `install_autostart.sh` | the systemd user service (also `--remove`) |
+| `bc250_python.sh` | the Python the monitor runs with: rebuilds the app's `.venv` after an upgrade of the system's Python, and starts the monitor for the service |
 | `bc250_check.py` | read-only health check of every data source |
 | `library/sensors/sensors_bc250.py` | the data the app can't read on a BC-250, plus the self-drawn widgets and the boot animations |
 | `make_theme.py` | generates a theme's `theme.yaml` and artwork: colours in `SKINS`, every position in `set_layout()` (one block per theme and orientation), the artwork in `render_*()` |
