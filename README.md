@@ -2,7 +2,7 @@
 
 [![tests](https://github.com/raphaeltournafond/bc250-themes/actions/workflows/tests.yml/badge.svg)](https://github.com/raphaeltournafond/bc250-themes/actions/workflows/tests.yml)
 
-Thirteen themes for [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python), made for a **3.5" Turing screen** (landscape or portrait) on an **AMD BC-250 Steam Machine running Bazzite**. Each has its own boot animation. Pick one with `--theme`:
+Fourteen themes for [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python), made for a **3.5" Turing screen** (landscape or portrait) on an **AMD BC-250 Steam Machine running Bazzite**. Each has its own boot animation. Pick one with `--theme`:
 
 <table>
   <tr>
@@ -23,10 +23,11 @@ Thirteen themes for [turing-smart-screen-python](https://github.com/mathoudebine
     <td align="center" width="20%"><img src="res/themes/BC250-Horror/preview.png" width="165" alt="Horror theme"><br><b>Horror</b><br><code>horror</code><br>it moves when the lights go out</td>
     <td align="center" width="20%"><img src="res/themes/BC250-Seismograph/preview.png" width="165" alt="Seismograph theme"><br><b>Seismograph</b><br><code>seismograph</code><br>real earthquakes, live</td>
     <td align="center" width="20%"><img src="res/themes/BC250-Orbit/preview.png" width="165" alt="Orbit theme"><br><b>Orbit</b><br><code>orbit</code><br>the ISS, and when it passes over you</td>
+    <td align="center" width="20%"><img src="res/themes/BC250-Departures/preview.png" width="165" alt="Departures theme"><br><b>Departures</b><br><code>departures</code><br>split-flap station board</td>
   </tr>
 </table>
 
-Nine of them show the same live data: CPU, GPU, system, and what the machine is playing or downloading. The radar trades some of it for live flights around a point you choose, the horror theme for a camera watching a corridor you'd rather not look at, the seismograph for the world's real earthquakes, and the orbit theme for the International Space Station going round. Portrait layouts, boot animations and details are under [Themes](#themes).
+Nine of them show the same live data: CPU, GPU, system, and what the machine is playing or downloading; the departures board shows it too, as trains. The radar trades some of it for live flights around a point you choose, the horror theme for a camera watching a corridor you'd rather not look at, the seismograph for the world's real earthquakes, and the orbit theme for the International Space Station going round. Portrait layouts, boot animations and details are under [Themes](#themes).
 
 ## Quick start
 
@@ -52,7 +53,7 @@ That's it: the screen now starts with the boot animation every time the BC-250 b
 | To… | Run |
 |---|---|
 | update the theme | `git -C bc250-themes pull && bash bc250-themes/setup.sh` |
-| switch theme | `bash bc250-themes/setup.sh --theme gameboy` (or `retrowave`, `videotex`, `mission`, `minecraft`, `nixie`, `radar`, `halloween`, `christmas`, `horror`, `seismograph`, `orbit`, `phosphor`) |
+| switch theme | `bash bc250-themes/setup.sh --theme gameboy` (or `retrowave`, `videotex`, `mission`, `minecraft`, `nixie`, `radar`, `halloween`, `christmas`, `horror`, `seismograph`, `orbit`, `departures`, `phosphor`) |
 | change an option | `bash bc250-themes/setup.sh --night 23:30-08:00 --logo "MY RIG"` (remembered for next time) |
 | go back to the defaults | `bash bc250-themes/setup.sh --reset-options` |
 | remove it | `bash bc250-themes/setup.sh --uninstall` |
@@ -336,13 +337,40 @@ bash bc250-themes/setup.sh --theme orbit --orbit-lat 48.8584 --orbit-lon 2.2945 
 
 </details>
 
+<details>
+<summary><b>Departures</b> <code>--theme departures</code>: a station's split-flap departures board, in French</summary>
+
+<br>
+
+![departures landscape](res/themes/BC250-Departures/preview.png) ![departures portrait](res/themes/BC250-Departures/preview_portrait.png)
+
+The mechanical board of a railway station: every letter is a drum of flaps that turns forward, one character after the other, until it reaches the new one. Cells turn a moment apart, which gives the board its cascade.
+
+- **One train per part of the machine:** CPU, GPU, APU, RAM, SSD and NET. Each has its load and another reading: temperature, watts and GPU clock, GB used or free, download and upload rates.
+- **The remark column says how it runs:** "A L'HEURE"; "RETARD 4'" when it runs hot (a minute per degree past `--hot`); "SUPPRIME" in red from `--alert`; "AFFLUENCE" and "COMPLET" when the memory or the game drive fill up; "EN ROUTE" while data comes in, "A QUAI" when the network is quiet.
+- **The clock is flaps too,** and turns every minute.
+- **The LED band** under the board is the status line, in amber: "EN VOIE 1 Hades II" with the FPS and the trip time, "EN APPROCHE" for a download, "PRÉPARATION SHADERS", and "QUAI LIBRE" / "aucun départ prévu" when idle.
+- **In portrait,** each train has a line under it saying what it is.
+- **Boot:** the clock turns to the time, then the station's checks run on the LED band while the trains come up one row after the other. The board carries on turning from there.
+
+```bash
+bash bc250-themes/setup.sh --theme departures
+```
+
+- Only the cells that change are sent to the screen, so a busy second costs a few small rectangles. The flaps show capitals without accents, as real ones do.
+- The board needs no network and no extra option. It uses the same temperature and power thresholds as the other themes (`--hot`, `--alert`, `--pwr-high`).
+
+![departures boot](res/themes/BC250-Departures/splash_preview.gif)
+
+</details>
+
 *Game Boy- and Minecraft-inspired fan themes, not affiliated with or endorsed by Nintendo, Mojang or Microsoft; they use no logos or game assets (all art is drawn by `make_theme.py`). Retrowave's logo uses the Race Space font that comes with the app (free for non-commercial use).*
 
 ## Options
 
 | Option | Default | Effect |
 |---|---|---|
-| `--theme NAME` | `phosphor` | `phosphor` (green terminal), `gameboy` (4-shade RPG status screen), `retrowave` (neon sunset), `videotex` (French videotex pages), `mission` (1969 mission control), `minecraft` (blocky inventory), `nixie` (Nixie tubes), `radar` (live flights), `halloween` (pumpkins and a graveyard), `christmas` (snow and Santa's sleigh), `horror` (a security camera, and what moves when the lights go out), `seismograph` (real earthquakes on a paper drum) or `orbit` (the ISS, and when it passes over you) |
+| `--theme NAME` | `phosphor` | `phosphor` (green terminal), `gameboy` (4-shade RPG status screen), `retrowave` (neon sunset), `videotex` (French videotex pages), `mission` (1969 mission control), `minecraft` (blocky inventory), `nixie` (Nixie tubes), `radar` (live flights), `halloween` (pumpkins and a graveyard), `christmas` (snow and Santa's sleigh), `horror` (a security camera, and what moves when the lights go out), `seismograph` (real earthquakes on a paper drum), `orbit` (the ISS, and when it passes over you) or `departures` (a split-flap station board) |
 | `--portrait` | landscape | portrait layout (320×480): panels stacked, 2×3 grid |
 | `--logo TEXT` / `--subtitle TEXT` | `BC-250` / `STEAM MACHINE` | boot splash title and the line under it |
 | `--user NAME` / `--host NAME` | your login / hostname | the `user@host:~$` prompt |

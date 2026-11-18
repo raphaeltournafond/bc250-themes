@@ -97,6 +97,12 @@ def main():
                              f"{name}: tracked the ISS for {b._Tracker.frames} frames"
                              + (f", now at {b._degrees_text(where['lat'], where['lon'])}, {where['alt']:.0f} km up"
                                 if where else ", without elements"))
+            if args.theme == "departures" and not args.screenshot:
+                cells = b._FlapBoard.shared.cells if b._FlapBoard.shared else {}
+                cpu = "".join(cells[(x, b._Draw.theme("Bc250Departures")["ROW_YS"][0])]["char"]
+                              for x in b._Draw.theme("Bc250Departures")["COLUMNS"]["TRAIN"]) if cells else ""
+                ok &= report(b._FlapBoard.flips >= 100 and cpu == "CPU",
+                             f"{name}: {b._FlapBoard.flips} flaps turned, {len(cells)} cells, first train '{cpu}'")
             if args.theme == "horror" and not args.screenshot:
                 gentle = "--no-jumpscare" in args.extra
                 ok &= report(b._Horror.moves >= 3 and b._Horror.whispers >= 1 and (b._Horror.scares == 0) == gentle,
