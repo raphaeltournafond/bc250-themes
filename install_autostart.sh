@@ -29,19 +29,14 @@ if [[ "${2:-}" == "--remove" ]]; then
   exit 0
 fi
 
-# The Python that has the monitor's libraries: the repo's venv if there is one, else the system python3
-PYTHON=""
-for candidate in "$REPO/.venv/bin/python" "$REPO/venv/bin/python" "$(command -v python3 || true)"; do
-  if [[ -n "$candidate" && -x "$candidate" ]] && "$candidate" -c "import serial, PIL, yaml, psutil, babel" 2>/dev/null; then
-    PYTHON="$candidate"
-    break
-  fi
-done
-if [[ -z "$PYTHON" ]]; then
-  echo "No Python with the monitor's requirements found. Install them first, e.g.:" >&2
-  echo "  python3 -m pip install --user -r \"$REPO/requirements.txt\"" >&2
+# The Python that has the monitor's libraries. The service starts the monitor through bc250_python.sh, which checks
+# them first: after an upgrade of the system's Python it rebuilds the app's .venv, instead of failing at every boot.
+LAUNCHER="$REPO/bc250_python.sh"
+if [[ ! -f "$LAUNCHER" ]]; then
+  echo "$LAUNCHER is missing: run setup.sh (or install_bc250.sh) first." >&2
   exit 1
 fi
+PYTHON="$(bash "$LAUNCHER" "$REPO")" || { echo "No Python with the monitor's libraries (see above)." >&2; exit 1; }
 
 # Only one program can talk to the screen at a time
 OFFICIAL=turing-smart-screen-python.service  # the system service from the project's wiki (tools/ folder)
@@ -65,7 +60,7 @@ StartLimitIntervalSec=0
 [Service]
 Type=simple
 WorkingDirectory=$REPO
-ExecStart=$PYTHON $REPO/main.py
+ExecStart=/bin/bash $LAUNCHER $REPO --run
 # no desktop tray under systemd
 Environment=PYSTRAY_BACKEND=dummy
 Environment=PYTHONUNBUFFERED=1

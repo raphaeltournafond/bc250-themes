@@ -65,8 +65,8 @@ esac
 
 for theme in "$SRC"/res/themes/BC250-*; do cp -r "$theme" "$REPO/res/themes/"; done
 cp "$SRC/library/sensors/sensors_bc250.py" "$REPO/library/sensors/"
-cp "$SRC/bc250_check.py" "$REPO/"
-echo "Copied themes, sensors and bc250_check.py"
+cp "$SRC/bc250_check.py" "$SRC/bc250_python.sh" "$REPO/"
+echo "Copied themes, sensors, bc250_check.py and bc250_python.sh"
 
 # Expose the BC-250 sensor classes to the theme's CUSTOM section
 CUSTOM="$REPO/library/sensors/sensors_custom.py"

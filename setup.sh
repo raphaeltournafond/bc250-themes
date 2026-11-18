@@ -17,7 +17,6 @@ OPTIONS_FILE="$STATE_DIR/options"
 APP_FILE="$STATE_DIR/app_path"
 APP_URL="https://github.com/mathoudebine/turing-smart-screen-python"
 SERVICE=turing-monitor
-REQUIRED_MODULES="serial yaml psutil PIL babel requests ping3 uptime numpy usb Crypto"
 
 say()  { printf '\033[92m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[93m!! \033[0m %s\n' "$*" >&2; }
@@ -68,7 +67,7 @@ if [[ "$UNINSTALL" == 1 ]]; then
   bash "$SRC/install_autostart.sh" "$APP" --remove || true
   sed -i 's/^\(  THEME:\).*/\1 3.5inchTheme2/' "$APP/config.yaml"
   sed -i '/# BC250-Phosphor theme sensors/d; /sensors_bc250 import/d' "$APP/library/sensors/sensors_custom.py"
-  rm -rf "$APP"/res/themes/BC250-* "$APP/library/sensors/sensors_bc250.py" "$APP/bc250_check.py"
+  rm -rf "$APP"/res/themes/BC250-* "$APP/library/sensors/sensors_bc250.py" "$APP/bc250_check.py" "$APP/bc250_python.sh"
   say "Uninstalled: the app is back on its default theme (your options stay in $STATE_DIR)."
   exit 0
 fi
@@ -84,24 +83,8 @@ elif [[ -s "$OPTIONS_FILE" ]]; then
 fi
 
 # --- 3. Python with the app's libraries ----------------------------------------------------------------------------------
-has_modules() { "$1" -c "import importlib, sys; [importlib.import_module(m) for m in sys.argv[1:]]" $REQUIRED_MODULES \
-                >/dev/null 2>&1; }
-PYTHON=""
-for candidate in "$APP/.venv/bin/python" "$APP/venv/bin/python" "$(command -v python3 || true)"; do
-  if [[ -n "$candidate" && -x "$candidate" ]] && has_modules "$candidate"; then PYTHON="$candidate"; break; fi
-done
-if [[ -z "$PYTHON" ]]; then
-  say "Installing the app's Python libraries in $APP/.venv (private to the app, nothing system-wide)"
-  python3 -m venv "$APP/.venv" || fail "python3 -m venv failed"
-  "$APP/.venv/bin/python" -m pip install --quiet --upgrade pip || true
-  if ! "$APP/.venv/bin/python" -m pip install --quiet -r "$APP/requirements.txt"; then
-    warn "Some optional packages failed; installing the ones the monitor needs"
-    "$APP/.venv/bin/python" -m pip install --quiet pyserial PyYAML psutil Pillow babel requests ping3 uptime numpy \
-      pyusb pycryptodome ruamel.yaml pystray || fail "Could not install the Python libraries (see above)"
-  fi
-  PYTHON="$APP/.venv/bin/python"
-  has_modules "$PYTHON" || fail "The Python libraries are still incomplete in $APP/.venv"
-fi
+# (rebuilds the app's .venv when an upgrade of the system's Python has left it with another version's libraries)
+PYTHON="$(bash "$SRC/bc250_python.sh" "$APP")" || fail "Could not install the app's Python libraries (see above)"
 say "Python: $PYTHON"
 
 # --- 4. screen access -------------------------------------------------------------------------------------------------------
