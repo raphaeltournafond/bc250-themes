@@ -72,6 +72,10 @@ def live_boxes(theme_yaml):
             boxes.append((f"orbit {name.lower()}", x, y + 14, x + w, y + h))
         x, bl, xr = orbit["HEADER"]
         boxes.append(("orbit header", x, bl - 11, xr, bl + 3))
+    board = custom.get("Bc250Departures")
+    if board:
+        x, y, w, h = board["BOARD"]
+        boxes.append(("departures board", x, y, x + w, y + h))
     horror = custom.get("Bc250Horror")
     if horror:
         x, y, w, h = horror["FEED"]

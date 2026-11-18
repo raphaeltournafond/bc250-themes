@@ -1,6 +1,6 @@
 # BC-250 theme generator for turing-smart-screen-python: renders the artwork and writes theme.yaml of one theme
 # from a single layout, so static art and live widgets always line up.
-#     python3 make_theme.py --app ~/turing-smart-screen-python [--theme phosphor|gameboy|retrowave|videotex|mission|minecraft|nixie|radar|halloween|christmas|horror|seismograph|orbit] [--portrait] [...]
+#     python3 make_theme.py --app ~/turing-smart-screen-python [--theme phosphor|gameboy|retrowave|videotex|mission|minecraft|nixie|radar|halloween|christmas|horror|seismograph|orbit|departures] [--portrait] [...]
 #     python3 make_theme.py --help
 # The theme is written to <app>/res/themes/BC250-<Theme> (fonts are read from <app>/res/fonts).
 #
@@ -116,6 +116,10 @@ SKINS = {
     "orbit": dict(folder="BC250-Orbit", bg=(7, 12, 22), dim=(86, 108, 134), mid=(122, 172, 222), value=(226, 236, 246),
                   accent=(255, 190, 70), cold=(120, 200, 170), hot=(240, 170, 80), alert=(240, 64, 56), ink=(7, 12, 22),
                   grid_dot=(24, 38, 58), bar=(122, 172, 222), palette=None),
+    # Departures: a station's split-flap board, white and yellow letters on black leaves, an amber LED band under it
+    "departures": dict(folder="BC250-Departures", bg=(18, 18, 20), dim=(120, 120, 124), mid=(252, 204, 64),
+                       value=(238, 236, 226), accent=(255, 176, 48), cold=(200, 214, 200), hot=(255, 150, 40),
+                       alert=(240, 60, 50), ink=(18, 18, 20), grid_dot=(44, 44, 48), bar=(252, 204, 64), palette=None),
 }
 SKIN_NAME = "phosphor"
 SKIN = SKINS[SKIN_NAME]
@@ -228,9 +232,9 @@ def set_layout(portrait: bool, skin: str = "phosphor"):
     global PROMPT_Y, PROMPT_LABEL_BL, PROMPT_VALUE_BL, PROMPT_COLS_BL, PROMPT_X, PROMPT_XR, PROMPT_AREA
     global PROMPT_COL1_XR, PROMPT_COLS, SPLASH_LAYOUT, RADAR
     PORTRAIT, SKIN_NAME, SKIN = portrait, skin, SKINS[skin]
-    gameboy, retro, videotex, mission, blocky, nixie, radar, haunted, festive, horror, seismo, orbit = (
+    gameboy, retro, videotex, mission, blocky, nixie, radar, haunted, festive, horror, seismo, orbit, board = (
         skin == name for name in ("gameboy", "retrowave", "videotex", "mission", "minecraft", "nixie", "radar",
-                                  "halloween", "christmas", "horror", "seismograph", "orbit"))
+                                  "halloween", "christmas", "horror", "seismograph", "orbit", "departures"))
     card = gameboy_card if gameboy else (lambda *box: phosphor_panel(*box, col_a_offset=130 if portrait else 100))
     if not portrait:  # 480x320: CPU and GPU side by side, 3x2 grid, one-line prompt
         W, H = 480, 320
@@ -398,6 +402,10 @@ def set_layout(portrait: bool, skin: str = "phosphor"):
         col_w = (lx2 - lx1) // ORBIT_LAYOUT[portrait]["log_columns"]
         SPLASH_LAYOUT = dict(row_bl=ly1 + 14, row_step=ORBIT_LAYOUT[portrait]["log_step"], label_x=lx1 + 8,
                              value_x=lx1 + 62, status_xr=lx1 + col_w - 8, progress_bl=0, status_bl=0, bar=(0, 0, 0, 0))
+    if board:  # the flap board above, the LED band (the status line) under it; the boot runs its checks on the band
+        DATE_XR = None
+        SPLASH_LAYOUT = dict(row_bl=PROMPT_VALUE_BL, row_step=0, label_x=PROMPT_X, value_x=PROMPT_X,
+                             status_xr=PROMPT_XR, progress_bl=0, status_bl=0, bar=(0, 0, 0, 0))
     if radar:  # scope on the left (top in portrait), the flight card, list, CPU/GPU and prompt beside (below) it
         RADAR.update(RADAR_LAYOUT[portrait])
         DATE_XR = None
@@ -611,6 +619,12 @@ ORBIT_WORDS = {"boot": "ACQUIRING", "now-playing": "ON BOARD", "downloading": "U
                "idle": "STATION KEEPING", "idle-text": "all systems nominal"}
 
 
+# Departures LED band wording ("EN VOIE 1 Hades II"; idle: "QUAI LIBRE" / "aucun départ prévu")
+DEPARTURES_WORDS = {"boot": "MISE EN SERVICE", "now-playing": "EN VOIE 1", "downloading": "EN APPROCHE",
+                    "installing": "EN FORMATION", "verifying": "CONTRÔLE", "fossilize_replay": "PRÉPARATION SHADERS",
+                    "last-session": "DERNIER DÉPART", "idle": "QUAI LIBRE", "idle-text": "aucun départ prévu"}
+
+
 # Radar status line wording
 RADAR_WORDS = {"boot": "STARTING", "now-playing": "NOW PLAYING", "downloading": "DOWNLOADING", "installing": "INSTALLING",
                "verifying": "VERIFYING", "fossilize_replay": "SHADERS", "last-session": "LAST GAME", "idle": "STANDBY",
@@ -626,7 +640,7 @@ def prompt_prefix(user, prompt):
     """What precedes the live command word in the prompt's label row."""
     return {"gameboy": user.upper(), "retrowave": f"1UP {user.upper()}", "videotex": "", "mission": "",
             "minecraft": "", "nixie": "", "radar": "", "halloween": "", "christmas": "", "horror": "", "seismograph": "",
-            "orbit": ""}.get(SKIN_NAME, prompt)
+            "orbit": "", "departures": ""}.get(SKIN_NAME, prompt)
 
 
 def build_theme(title, prompt, user):
@@ -677,6 +691,11 @@ def build_theme(title, prompt, user):
     if SKIN_NAME == "orbit":  # mission elapsed time
         prompt_spec.update({"CMD_WORDS": ORBIT_WORDS, "LABEL_COLOR": rgb(SKIN["mid"]),
                             "COL_WORDS": {"SESSION": "MET", "TIME": "MET"}})
+    if SKIN_NAME == "departures":  # amber LEDs, in French like the board
+        prompt_spec.update({"CMD_WORDS": DEPARTURES_WORDS, "BRIGHT": rgb(DP["LED"]), "MID": rgb((230, 150, 40)),
+                            "DIM": rgb(DP["LED_DIM"]), "AMBER": rgb((255, 120, 40)), "LABEL_COLOR": rgb(DP["LED_DIM"]),
+                            "COL_WORDS": {"DONE": "FAIT", "ETA": "RESTE", "RATE": "DÉBIT", "SESSION": "TRAJET",
+                                          "TIME": "TRAJET", "PEAK C/G": "PIC C/G"}})
     if SKIN_NAME == "horror":
         prompt_spec.update({"CMD_WORDS": HORROR_WORDS, "LABEL_COLOR": rgb(SKIN["mid"]),
                             "COL_WORDS": {"SESSION": "YOU STAYED", "TIME": "YOU STAYED"}})
@@ -708,7 +727,7 @@ def build_theme(title, prompt, user):
         "IMAGE_NOLOGO": "splash_nologo.png", "LOGO_TEXT": LOGO,
     }
     if SKIN_NAME not in ("retrowave", "videotex", "mission", "minecraft", "nixie", "radar", "halloween",
-                         "christmas", "horror", "seismograph", "orbit"):  # pixel-font logo
+                         "christmas", "horror", "seismograph", "orbit", "departures"):  # pixel-font logo
         splash.update({"LOGO_SIZE": logo_size(LOGO), "LOGO_BL": logo_baseline(logo_size(LOGO)),
                        "LOGO_BOX": list(sl["logo_box"])})
     if SKIN_NAME == "phosphor":  # the dark tube the warm-up starts from: only the text has to be sent after it
@@ -838,6 +857,8 @@ def build_theme(title, prompt, user):
         theme = seismo_theme(theme, title)
     if SKIN_NAME == "orbit":
         theme = orbit_theme(theme, title)
+    if SKIN_NAME == "departures":
+        theme = departures_theme(theme)
     return theme
 
 
@@ -941,7 +962,8 @@ class Canvas:
     def finish(self):
         if SKIN_NAME == "gameboy":
             return self.lcd_grid(self.img)
-        if SKIN_NAME in ("videotex", "minecraft", "nixie", "radar", "horror", "seismograph", "orbit"):  # flat colours
+        if SKIN_NAME in ("videotex", "minecraft", "nixie", "radar", "horror", "seismograph", "orbit",
+                         "departures"):  # flat colours
             return self.img
         if SKIN_NAME in ("halloween", "christmas"):  # candle-lit text and dark corners, no scanlines
             img = ImageChops.add(self.img, self.glow.filter(ImageFilter.GaussianBlur(2)).point(lambda v: int(v * 0.4)))
@@ -2552,6 +2574,113 @@ def orbit_theme(theme, title):
 
 
 # ---------------------------------------------------------------------------------------------------------------------
+# Departures artwork: a station's split-flap board (blank flaps: the sensors turn them) over an LED information band
+# ---------------------------------------------------------------------------------------------------------------------
+DEPARTURES_LAYOUT = {  # landscape, portrait. Cells: width, height, font size; columns of 3, 4, 4 and 9 cells
+    False: dict(cell=(20, 30, 24), pitch=22, gap=10, x0=9, rows=tuple(64 + 35 * i for i in range(6)), headings_bl=58,
+                heading=(10, 31), subtitle=(10, 45), clock=dict(x=375, y=8, w=20, h=30, size=24, pitch=22, colon=10),
+                captions=False),
+    True: dict(cell=(13, 32, 24), pitch=14, gap=10, x0=7, rows=tuple(82 + 56 * i for i in range(6)), headings_bl=76,
+               heading=(8, 33), subtitle=(8, 50), clock=dict(x=196, y=10, w=26, h=40, size=36, pitch=28, colon=10),
+               captions=True),
+}
+DP_COLUMNS = (("TRAIN", 3, "TRAIN"), ("LOAD", 4, "CHARGE"), ("OTHER", 4, "DÉTAIL"), ("REMARK", 9, "INFORMATION"))
+DP_CAPTIONS = ("PROCESSEUR · CHARGE, TEMPÉRATURE", "GRAPHIQUE · CHARGE, TEMPÉRATURE", "PUCE · PUISSANCE, HORLOGE GPU",
+               "MÉMOIRE · OCCUPÉE, EN GO", "BIBLIOTHÈQUE STEAM · OCCUPÉE, LIBRE", "RÉSEAU · RÉCEPTION, ÉMISSION")
+DP = dict(BOARD=(18, 18, 20), FLAP_TOP=(46, 46, 48), FLAP_BOTTOM=(38, 38, 40), HINGE=(10, 10, 12), TEXT=(238, 236, 226),
+          TRAIN=(252, 204, 64), INFO=(200, 214, 200), ORANGE=(255, 150, 40), RED=(240, 60, 50), DIM=(120, 120, 124),
+          LED=(255, 176, 48), LED_DIM=(170, 110, 36))
+DP_LED_PANEL, DP_LED_DOT = (12, 9, 6), (26, 18, 10)
+
+
+def departures_columns():
+    """x of every cell of each column, left to right."""
+    dl = DEPARTURES_LAYOUT[PORTRAIT]
+    columns, x = {}, dl["x0"]
+    for key, cells, _ in DP_COLUMNS:
+        columns[key] = [x + i * dl["pitch"] for i in range(cells)]
+        x = columns[key][-1] + dl["cell"][0] + dl["gap"]
+    return columns
+
+
+def departures_clock():
+    c = DEPARTURES_LAYOUT[PORTRAIT]["clock"]
+    xs = [c["x"], c["x"] + c["pitch"], c["x"] + 2 * c["pitch"] + c["colon"], c["x"] + 3 * c["pitch"] + c["colon"]]
+    return xs, (xs[1] + c["w"] + xs[2]) // 2  # the cells, and where the colon goes
+
+
+def dp_flap(d, x, y, w, h):
+    """A blank flap: the same drawing as _flap() and _flap_hinge() in the sensors, so a blank cell sends nothing."""
+    d.rectangle((x, y, x + w - 1, y + h // 2 - 1), fill=DP["FLAP_TOP"])
+    d.rectangle((x, y + h // 2, x + w - 1, y + h - 1), fill=DP["FLAP_BOTTOM"])
+    for cx, cy in ((x, y), (x + w - 1, y), (x, y + h - 1), (x + w - 1, y + h - 1)):
+        d.point((cx, cy), fill=DP["BOARD"])
+    d.line((x, y + h // 2, x + w - 1, y + h // 2), fill=DP["HINGE"])
+
+
+def render_background_departures(title):
+    """The board with all its flaps blank, the column headings, the clock's cells, and the LED band under it."""
+    dl = DEPARTURES_LAYOUT[PORTRAIT]
+    c = Canvas()
+    c.label(*dl["heading"], "DÉPARTS", DP["TRAIN"], size=M, glow=False)
+    c.label(*dl["subtitle"], title, SKIN["dim"], glow=False)
+    cw, ch, _ = dl["cell"]
+    columns = departures_columns()
+    for (key, _, heading) in DP_COLUMNS:
+        c.label(columns[key][0], dl["headings_bl"], heading, SKIN["dim"], glow=False)
+    for n, y in enumerate(dl["rows"]):
+        for xs in columns.values():
+            for x in xs:
+                dp_flap(c.d, x, y, cw, ch)
+        if dl["captions"]:
+            c.label(columns["TRAIN"][0], y + ch + 13, DP_CAPTIONS[n], SKIN["dim"], glow=False)
+    clock = dl["clock"]
+    xs, colon = departures_clock()
+    for x in xs:
+        dp_flap(c.d, x, clock["y"], clock["w"], clock["h"])
+    for dy in (-6, 5):
+        cy = clock["y"] + clock["h"] // 2 + dy
+        c.d.rectangle((colon - 1, cy - 1, colon + 1, cy + 1), fill=DP["TEXT"])
+    c.d.line((0, PROMPT_Y, W, PROMPT_Y), fill=SKIN["grid_dot"])
+    x, y, w, h = PROMPT_AREA  # the LED band: a dark panel and its grid of unlit dots
+    c.d.rectangle((x, y, x + w - 1, y + h - 1), fill=DP_LED_PANEL)
+    for py in range(y + 1, y + h - 1, 3):
+        for px in range(x + 1, x + w - 1, 3):
+            c.d.point((px, py), fill=DP_LED_DOT)
+    return c.finish()
+
+
+def departures_spec():
+    dl = DEPARTURES_LAYOUT[PORTRAIT]
+    clock = dl["clock"]
+    return {"BOARD": [0, 0, W, PROMPT_Y], "CELL": list(dl["cell"]), "ROW_YS": list(dl["rows"]),
+            "COLUMNS": departures_columns(), "CLOCK": {"XS": departures_clock()[0], "Y": clock["y"], "W": clock["w"],
+                                                       "H": clock["h"], "SIZE": clock["size"]},
+            "HOT": TEMP_HOT, "ALERT": TEMP_ALERT, "POWER_HIGH": POWER_HIGH, "REFRESH": 2, "TILE": 10, "FONT": FONT,
+            "BACKGROUND_IMAGE": "background.png", "COLORS": {k: rgb(v) for k, v in DP.items()}}
+
+
+def departures_theme(theme):
+    """The board draws everything above the LED band, from the readings the app samples; the app keeps the status
+    line (in the band) and the screen power."""
+    custom = theme["STATS"]["CUSTOM"]
+    spec = departures_spec()
+    theme["STATS"] = {"CUSTOM": {
+        "INTERVAL": 1,
+        # sampled for the board (and the session peaks), drawn by nothing else
+        "Bc250CpuTemp": {"ALERT": TEMP_ALERT}, "Bc250GpuTemp": {"ALERT": TEMP_ALERT},
+        "Bc250GpuLoad": {"SAMPLE_ONLY": True}, "Bc250ApuPower": {"SAMPLE_ONLY": True},
+        "Bc250Departures": spec,
+        "Bc250Prompt": custom["Bc250Prompt"],
+        "Bc250Screen": custom["Bc250Screen"],
+    }}
+    theme["bc250_splash"].update({k: v for k, v in spec.items() if k != "BACKGROUND_IMAGE"})
+    theme["bc250_splash"].update({"STYLE": "departures", "IMAGE": "background.png", "LED": list(PROMPT_AREA),
+                                  "LED_LABEL_BL": PROMPT_LABEL_BL, "LED_VALUE_BL": PROMPT_VALUE_BL})
+    return theme
+
+
+# ---------------------------------------------------------------------------------------------------------------------
 # Horror artwork: a security camera's view of a basement corridor, what stands in it, and its face
 # ---------------------------------------------------------------------------------------------------------------------
 HORROR_LAYOUT = {  # landscape, portrait: the feed, the console's values and labels, its separators
@@ -3456,7 +3585,7 @@ if __name__ == "__main__":
     title = (args.title or {"videotex": f"P250 {LOGO}", "mission": f"MCC {LOGO}", "radar": f"{LOGO} RADAR",
                             "halloween": f"HAUNTED {LOGO}", "christmas": f"MERRY {LOGO}",
                             "horror": "CAM 04  SUB-LEVEL B2", "seismograph": f"STATION {LOGO}",
-                            "orbit": f"{LOGO} GROUND STATION"}.get(SKIN_NAME)
+                            "orbit": f"{LOGO} GROUND STATION", "departures": f"GARE {LOGO}"}.get(SKIN_NAME)
              or f"{LOGO}::{args.user.upper()}")[:28]
     prompt = f"{args.user}@{args.host}:~$"[:40]
 
@@ -3487,6 +3616,8 @@ if __name__ == "__main__":
     elif SKIN_NAME == "orbit":
         render_background_orbit(title).save(THEME_DIR / "background.png")
         ob_regions().save(THEME_DIR / "regions.png")
+    elif SKIN_NAME == "departures":
+        render_background_departures(title).save(THEME_DIR / "background.png")
     elif SKIN_NAME == "horror":
         HR_TITLE, HR_JUMPSCARE = title, not args.no_jumpscare
         render_background_horror(title).save(THEME_DIR / "background.png")
@@ -3530,7 +3661,8 @@ if __name__ == "__main__":
              "christmas": "BC250-Christmas - snow, a lit tree and Santa's sleigh on a silent night",
              "horror": "BC250-Horror - a security camera, a corridor, and what moves when the lights go out",
              "seismograph": "BC250-Seismograph - your machine's tremors and the world's real earthquakes on one drum",
-             "orbit": "BC250-Orbit - a ground station tracking the ISS, and when it passes over you"}
+             "orbit": "BC250-Orbit - a ground station tracking the ISS, and when it passes over you",
+             "departures": "BC250-Departures - a station's split-flap departures board"}
     header = (f"# {names[SKIN_NAME]} for an AMD BC-250 Steam Machine\n"
               f"# Turing 3.5\" {'portrait' if PORTRAIT else 'landscape'}. GENERATED by make_theme.py: "
               "edit the script or its options and re-run it.\n"
