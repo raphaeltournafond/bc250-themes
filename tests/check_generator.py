@@ -76,6 +76,10 @@ def live_boxes(theme_yaml):
     if board:
         x, y, w, h = board["BOARD"]
         boxes.append(("departures board", x, y, x + w, y + h))
+    wheel = custom.get("Bc250Racing")
+    if wheel:
+        x, y, w, h = wheel["DASH"]
+        boxes.append(("racing wheel", x, y, x + w, y + h))
     horror = custom.get("Bc250Horror")
     if horror:
         x, y, w, h = horror["FEED"]

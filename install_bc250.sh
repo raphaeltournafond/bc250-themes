@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Installs a BC-250 theme (Phosphor, Game Boy, Retrowave, Videotex, Mission, Minecraft, Nixie, Radar, Halloween, Christmas, Horror, Seismograph, Orbit or Departures) into a turing-smart-screen-python checkout.
+# Installs a BC-250 theme (Phosphor, Game Boy, Retrowave, Videotex, Mission, Minecraft, Nixie, Radar, Halloween, Christmas, Horror, Seismograph, Orbit, Departures or Racing) into a turing-smart-screen-python checkout.
 # Usage: ./install_bc250.sh /path/to/turing-smart-screen-python [options]
-#   --theme NAME   phosphor (green terminal), gameboy (RPG screen), retrowave (neon), videotex (Minitel), mission (Apollo console), minecraft, nixie, radar (live flights), halloween, christmas, horror, seismograph (real earthquakes), orbit (the ISS) or departures (split-flap board)
+#   --theme NAME   phosphor (green terminal), gameboy (RPG screen), retrowave (neon), videotex (Minitel), mission (Apollo console), minecraft, nixie, radar (live flights), halloween, christmas, horror, seismograph (real earthquakes), orbit (the ISS), departures (split-flap board) or racing (steering wheel display)
 #   --user NAME    user in the "user@host:~$" prompt   (default: your login, $(whoami))
 #   --host NAME    host in the prompt                  (default: $(hostname -s))
 #   --title TEXT   header text                         (default: <LOGO>::<USER>)
@@ -59,7 +59,8 @@ case "$THEME_NAME" in
   seismograph) THEME_FOLDER=BC250-Seismograph ;;
   orbit) THEME_FOLDER=BC250-Orbit ;;
   departures) THEME_FOLDER=BC250-Departures ;;
-  *) echo "Unknown theme: $THEME_NAME (phosphor, gameboy, retrowave, videotex, mission, minecraft, nixie, radar, halloween, christmas, horror, seismograph, orbit or departures)" >&2; exit 1 ;;
+  racing) THEME_FOLDER=BC250-Racing ;;
+  *) echo "Unknown theme: $THEME_NAME (phosphor, gameboy, retrowave, videotex, mission, minecraft, nixie, radar, halloween, christmas, horror, seismograph, orbit, departures or racing)" >&2; exit 1 ;;
 esac
 
 for theme in "$SRC"/res/themes/BC250-*; do cp -r "$theme" "$REPO/res/themes/"; done

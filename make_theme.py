@@ -1,6 +1,6 @@
 # BC-250 theme generator for turing-smart-screen-python: renders the artwork and writes theme.yaml of one theme
 # from a single layout, so static art and live widgets always line up.
-#     python3 make_theme.py --app ~/turing-smart-screen-python [--theme phosphor|gameboy|retrowave|videotex|mission|minecraft|nixie|radar|halloween|christmas|horror|seismograph|orbit|departures] [--portrait] [...]
+#     python3 make_theme.py --app ~/turing-smart-screen-python [--theme phosphor|gameboy|retrowave|videotex|mission|minecraft|nixie|radar|halloween|christmas|horror|seismograph|orbit|departures|racing] [--portrait] [...]
 #     python3 make_theme.py --help
 # The theme is written to <app>/res/themes/BC250-<Theme> (fonts are read from <app>/res/fonts).
 #
@@ -120,6 +120,10 @@ SKINS = {
     "departures": dict(folder="BC250-Departures", bg=(18, 18, 20), dim=(120, 120, 124), mid=(252, 204, 64),
                        value=(238, 236, 226), accent=(255, 176, 48), cold=(200, 214, 200), hot=(255, 150, 40),
                        alert=(240, 60, 50), ink=(18, 18, 20), grid_dot=(44, 44, 48), bar=(252, 204, 64), palette=None),
+    # Racing: a single-seater's steering wheel display, on carbon, green, red and blue shift lights
+    "racing": dict(folder="BC250-Racing", bg=(14, 14, 16), dim=(110, 112, 118), mid=(255, 210, 40), value=(240, 240, 240),
+                   accent=(255, 210, 40), cold=(40, 210, 90), hot=(255, 170, 40), alert=(240, 40, 40), ink=(14, 14, 16),
+                   grid_dot=(52, 52, 58), bar=(40, 220, 90), palette=None),
 }
 SKIN_NAME = "phosphor"
 SKIN = SKINS[SKIN_NAME]
@@ -232,9 +236,9 @@ def set_layout(portrait: bool, skin: str = "phosphor"):
     global PROMPT_Y, PROMPT_LABEL_BL, PROMPT_VALUE_BL, PROMPT_COLS_BL, PROMPT_X, PROMPT_XR, PROMPT_AREA
     global PROMPT_COL1_XR, PROMPT_COLS, SPLASH_LAYOUT, RADAR
     PORTRAIT, SKIN_NAME, SKIN = portrait, skin, SKINS[skin]
-    gameboy, retro, videotex, mission, blocky, nixie, radar, haunted, festive, horror, seismo, orbit, board = (
+    gameboy, retro, videotex, mission, blocky, nixie, radar, haunted, festive, horror, seismo, orbit, board, wheel = (
         skin == name for name in ("gameboy", "retrowave", "videotex", "mission", "minecraft", "nixie", "radar",
-                                  "halloween", "christmas", "horror", "seismograph", "orbit", "departures"))
+                                  "halloween", "christmas", "horror", "seismograph", "orbit", "departures", "racing"))
     card = gameboy_card if gameboy else (lambda *box: phosphor_panel(*box, col_a_offset=130 if portrait else 100))
     if not portrait:  # 480x320: CPU and GPU side by side, 3x2 grid, one-line prompt
         W, H = 480, 320
@@ -402,7 +406,7 @@ def set_layout(portrait: bool, skin: str = "phosphor"):
         col_w = (lx2 - lx1) // ORBIT_LAYOUT[portrait]["log_columns"]
         SPLASH_LAYOUT = dict(row_bl=ly1 + 14, row_step=ORBIT_LAYOUT[portrait]["log_step"], label_x=lx1 + 8,
                              value_x=lx1 + 62, status_xr=lx1 + col_w - 8, progress_bl=0, status_bl=0, bar=(0, 0, 0, 0))
-    if board:  # the flap board above, the LED band (the status line) under it; the boot runs its checks on the band
+    if board or wheel:  # the board (or the wheel) above, the status line under it; the boot's checks run on that line
         DATE_XR = None
         SPLASH_LAYOUT = dict(row_bl=PROMPT_VALUE_BL, row_step=0, label_x=PROMPT_X, value_x=PROMPT_X,
                              status_xr=PROMPT_XR, progress_bl=0, status_bl=0, bar=(0, 0, 0, 0))
@@ -625,6 +629,12 @@ DEPARTURES_WORDS = {"boot": "MISE EN SERVICE", "now-playing": "EN VOIE 1", "down
                     "last-session": "DERNIER DÉPART", "idle": "QUAI LIBRE", "idle-text": "aucun départ prévu"}
 
 
+# Racing status line wording ("ON TRACK Hades II"; idle: "PARC FERME" / "engine off")
+RACING_WORDS = {"boot": "WARM-UP", "now-playing": "ON TRACK", "downloading": "PIT STOP", "installing": "IN THE GARAGE",
+                "verifying": "SCRUTINEERING", "fossilize_replay": "TYRE WARMERS ON", "last-session": "CHEQUERED FLAG",
+                "idle": "PARC FERME", "idle-text": "engine off"}
+
+
 # Radar status line wording
 RADAR_WORDS = {"boot": "STARTING", "now-playing": "NOW PLAYING", "downloading": "DOWNLOADING", "installing": "INSTALLING",
                "verifying": "VERIFYING", "fossilize_replay": "SHADERS", "last-session": "LAST GAME", "idle": "STANDBY",
@@ -640,7 +650,7 @@ def prompt_prefix(user, prompt):
     """What precedes the live command word in the prompt's label row."""
     return {"gameboy": user.upper(), "retrowave": f"1UP {user.upper()}", "videotex": "", "mission": "",
             "minecraft": "", "nixie": "", "radar": "", "halloween": "", "christmas": "", "horror": "", "seismograph": "",
-            "orbit": "", "departures": ""}.get(SKIN_NAME, prompt)
+            "orbit": "", "departures": "", "racing": ""}.get(SKIN_NAME, prompt)
 
 
 def build_theme(title, prompt, user):
@@ -691,6 +701,9 @@ def build_theme(title, prompt, user):
     if SKIN_NAME == "orbit":  # mission elapsed time
         prompt_spec.update({"CMD_WORDS": ORBIT_WORDS, "LABEL_COLOR": rgb(SKIN["mid"]),
                             "COL_WORDS": {"SESSION": "MET", "TIME": "MET"}})
+    if SKIN_NAME == "racing":
+        prompt_spec.update({"CMD_WORDS": RACING_WORDS, "LABEL_COLOR": rgb(RC["YELLOW"]),
+                            "COL_WORDS": {"SESSION": "RACE", "TIME": "RACE"}})
     if SKIN_NAME == "departures":  # amber LEDs, in French like the board
         prompt_spec.update({"CMD_WORDS": DEPARTURES_WORDS, "BRIGHT": rgb(DP["LED"]), "MID": rgb((230, 150, 40)),
                             "DIM": rgb(DP["LED_DIM"]), "AMBER": rgb((255, 120, 40)), "LABEL_COLOR": rgb(DP["LED_DIM"]),
@@ -727,7 +740,7 @@ def build_theme(title, prompt, user):
         "IMAGE_NOLOGO": "splash_nologo.png", "LOGO_TEXT": LOGO,
     }
     if SKIN_NAME not in ("retrowave", "videotex", "mission", "minecraft", "nixie", "radar", "halloween",
-                         "christmas", "horror", "seismograph", "orbit", "departures"):  # pixel-font logo
+                         "christmas", "horror", "seismograph", "orbit", "departures", "racing"):  # pixel-font logo
         splash.update({"LOGO_SIZE": logo_size(LOGO), "LOGO_BL": logo_baseline(logo_size(LOGO)),
                        "LOGO_BOX": list(sl["logo_box"])})
     if SKIN_NAME == "phosphor":  # the dark tube the warm-up starts from: only the text has to be sent after it
@@ -859,6 +872,8 @@ def build_theme(title, prompt, user):
         theme = orbit_theme(theme, title)
     if SKIN_NAME == "departures":
         theme = departures_theme(theme)
+    if SKIN_NAME == "racing":
+        theme = racing_theme(theme)
     return theme
 
 
@@ -963,7 +978,7 @@ class Canvas:
         if SKIN_NAME == "gameboy":
             return self.lcd_grid(self.img)
         if SKIN_NAME in ("videotex", "minecraft", "nixie", "radar", "horror", "seismograph", "orbit",
-                         "departures"):  # flat colours
+                         "departures", "racing"):  # flat colours
             return self.img
         if SKIN_NAME in ("halloween", "christmas"):  # candle-lit text and dark corners, no scanlines
             img = ImageChops.add(self.img, self.glow.filter(ImageFilter.GaussianBlur(2)).point(lambda v: int(v * 0.4)))
@@ -2681,6 +2696,116 @@ def departures_theme(theme):
 
 
 # ---------------------------------------------------------------------------------------------------------------------
+# Racing artwork: a single-seater's steering wheel display on carbon (the sensors light it)
+# ---------------------------------------------------------------------------------------------------------------------
+RACING_LAYOUT = {  # landscape, portrait
+    False: dict(leds=(30, 30, 22, 10), housing=(6, 8, 473, 36), title=(240, 49), gear=(190, 56, 290, 186), gear_size=96,
+                left=(8, 56, 182, 186), right=(298, 56, 472, 186),
+                labels=(("DELTA", 18, 72), ("FPS", 18, 140), ("LAP", 96, 140), ("THR", 12, 219), ("ERS", 12, 255)),
+                texts={"DELTA": (18, 112, 36, "ls"), "FPS": (18, 168, 24, "ls"), "LAP": (96, 168, 24, "ls"),
+                       "THR": (472, 222, 24, "rs"), "ERS": (472, 258, 24, "rs")},
+                tyres=((318, 64, 44, 52), (408, 64, 44, 52), (318, 126, 44, 52), (408, 126, 44, 52)),
+                bars={"THR": (48, 204, 400, 222, 28), "ERS": (48, 240, 400, 258, 28)},
+                start=((40, 66, 440, 176), 26, tuple((80 + 80 * i, 121) for i in range(5)))),
+    True: dict(leds=(20, 20, 20, 7), housing=(6, 8, 313, 32), title=(160, 49), gear=(116, 56, 204, 176), gear_size=96,
+               left=(6, 56, 110, 176), right=(210, 56, 314, 176),
+               labels=(("DELTA", 14, 72), ("FPS", 14, 140), ("LAP", 220, 72), ("THR", 8, 365), ("ERS", 8, 401)),
+               texts={"DELTA": (14, 112, 36, "ls"), "FPS": (14, 166, 24, "ls"), "LAP": (220, 100, 24, "ls"),
+                      "THR": (312, 368, 24, "rs"), "ERS": (312, 404, 24, "rs")},
+               tyres=((40, 194, 60, 64), (220, 194, 60, 64), (40, 266, 60, 64), (220, 266, 60, 64)),
+               bars={"THR": (44, 352, 250, 370, 20), "ERS": (44, 388, 250, 406, 20)},
+               start=((10, 70, 310, 160), 22, tuple((40 + 60 * i, 115) for i in range(5)))),
+}
+RC = dict(GREEN=(40, 220, 90), RED=(240, 40, 40), BLUE=(60, 130, 255), YELLOW=(255, 210, 40), WHITE=(240, 240, 240),
+          DIM=(110, 112, 118), LED_OFF=(30, 30, 34), LED_RIM=(62, 62, 68), TYRE=(24, 24, 28), TYRE_COLD=(60, 130, 255),
+          TYRE_OK=(40, 210, 90), TYRE_HOT=(255, 170, 40), TYRE_ALERT=(240, 40, 40), PANEL=(9, 9, 11),
+          SEG_OFF=(36, 36, 40))
+RC_TYRES = (("cpu_t", "CPU°"), ("gpu_t", "GPU°"), ("pwr", "APU W"), ("ram", "RAM%"))
+
+
+def racing_leds():
+    x0, step, y, r = RACING_LAYOUT[PORTRAIT]["leds"]
+    return [[x0 + step * i, y] for i in range(15)], r
+
+
+def racing_segments(x1, x2, n, gap=2):
+    """The cells of a segmented bar, [x1, x2] each."""
+    return [[x1 + round(i * (x2 - x1 + gap) / n), x1 + round((i + 1) * (x2 - x1 + gap) / n) - gap - 1] for i in range(n)]
+
+
+def render_background_racing(title):
+    """Carbon, the shift lights' housing and its unlit LEDs, the gear window, the panels, the empty bars, the car's
+    outline between its tyres."""
+    rl = RACING_LAYOUT[PORTRAIT]
+    c = Canvas()
+    px = c.img.load()
+    for y in range(H):  # a twill weave, faint
+        for x in range(W):
+            px[x, y] = (20, 20, 23) if ((x + y) // 3 + (x - y) // 3) % 2 else (14, 14, 16)
+    panel = lambda box, outline=(52, 52, 58): c.d.rounded_rectangle(box, radius=6, fill=RC["PANEL"], outline=outline)
+    panel(rl["housing"])
+    leds, r = racing_leds()
+    for x, y in leds:
+        c.d.ellipse((x - r, y - r, x + r, y + r), fill=RC["LED_OFF"], outline=RC["LED_RIM"])
+    c.label(*rl["title"], title, RC["DIM"], anchor="ms", glow=False)
+    panel(rl["gear"], (76, 76, 84))
+    panel(rl["left"])
+    panel(rl["right"])
+    for word, x, bl in rl["labels"]:
+        c.label(x, bl, word, RC["DIM"], glow=False)
+    for x1, y1, x2, y2, n in rl["bars"].values():
+        for sx1, sx2 in racing_segments(x1, x2, n):
+            c.d.rectangle((sx1, y1, sx2, y2), fill=RC["SEG_OFF"])
+    (fx, fy, fw, fh), _, (rx, ry, _, rh) = rl["tyres"][0], rl["tyres"][1], rl["tyres"][2]
+    body = ((fx + fw + rl["tyres"][1][0]) // 2, fy + 6, ry + rh - 6)  # the car seen from above, between its tyres
+    c.d.rectangle((body[0] - 9, body[1], body[0] + 9, body[2]), outline=RC["LED_RIM"])
+    for tx, ty, tw, th in rl["tyres"]:
+        c.d.line((tx + tw if tx < body[0] else tx - 1, ty + th // 2, body[0] - 9 if tx < body[0] else body[0] + 9,
+                  ty + th // 2), fill=RC["LED_RIM"])
+        c.d.rectangle((tx, ty, tx + tw - 1, ty + th - 1), fill=RC["TYRE"], outline=RC["LED_RIM"])
+    x, y, w, h = PROMPT_AREA
+    c.d.rectangle((x, y, x + w - 1, y + h - 1), fill=RC["PANEL"])
+    return c.finish()
+
+
+def racing_spec():
+    rl = RACING_LAYOUT[PORTRAIT]
+    leds, r = racing_leds()
+    gx1, gy1, gx2, gy2 = rl["gear"]
+    scales = {"cpu_t": [TEMP_COLD, TEMP_HOT, TEMP_ALERT], "gpu_t": [TEMP_COLD, TEMP_HOT, TEMP_ALERT],
+              "pwr": [POWER_LOW, (POWER_LOW + POWER_HIGH) // 2, POWER_HIGH], "ram": [40, 75, 90]}
+    return {"DASH": [0, 0, W, PROMPT_Y], "LEDS": leds, "LED_R": r, "GEAR": [(gx1 + gx2) // 2, (gy1 + gy2) // 2],
+            "GEAR_SIZE": rl["gear_size"], "TEXTS": {k: list(v) for k, v in rl["texts"].items()},
+            "TYRES": [[*box, source, label] for box, (source, label) in zip(rl["tyres"], RC_TYRES)],
+            "TYRE_SCALES": scales,
+            "BARS": {k: [racing_segments(x1, x2, n), y1, y2] for k, (x1, y1, x2, y2, n) in rl["bars"].items()},
+            "POWER_MAX": POWER_BAR_MAX, "FPS": 12, "TILE": 10, "FONT": FONT, "BACKGROUND_IMAGE": "background.png",
+            "COLORS": {k: rgb(v) for k, v in RC.items()}}
+
+
+def racing_theme(theme):
+    """The wheel draws everything above the status line, from the readings the app samples; the app keeps the status
+    line and the screen power."""
+    rl, custom = RACING_LAYOUT[PORTRAIT], theme["STATS"]["CUSTOM"]
+    spec = racing_spec()
+    theme["STATS"] = {"CUSTOM": {
+        "INTERVAL": 1,
+        # sampled for the wheel (and the session peaks), drawn by nothing else
+        "Bc250CpuTemp": {"ALERT": TEMP_ALERT}, "Bc250GpuTemp": {"ALERT": TEMP_ALERT},
+        "Bc250GpuLoad": {"SAMPLE_ONLY": True}, "Bc250ApuPower": {"SAMPLE_ONLY": True},
+        "Bc250Racing": spec,
+        "Bc250Prompt": custom["Bc250Prompt"],
+        "Bc250Screen": custom["Bc250Screen"],
+    }}
+    panel, radius, lights = rl["start"]
+    theme["bc250_splash"].update({k: v for k, v in spec.items() if k != "BACKGROUND_IMAGE"})
+    theme["bc250_splash"].update({"STYLE": "racing", "IMAGE": "background.png", "BAND": list(PROMPT_AREA),
+                                  "BAND_LABEL_BL": PROMPT_LABEL_BL, "BAND_VALUE_BL": PROMPT_VALUE_BL,
+                                  "START": [list(p) for p in lights], "START_R": radius, "START_PANEL": list(panel)})
+    return theme
+
+
+# ---------------------------------------------------------------------------------------------------------------------
 # Horror artwork: a security camera's view of a basement corridor, what stands in it, and its face
 # ---------------------------------------------------------------------------------------------------------------------
 HORROR_LAYOUT = {  # landscape, portrait: the feed, the console's values and labels, its separators
@@ -3585,7 +3710,8 @@ if __name__ == "__main__":
     title = (args.title or {"videotex": f"P250 {LOGO}", "mission": f"MCC {LOGO}", "radar": f"{LOGO} RADAR",
                             "halloween": f"HAUNTED {LOGO}", "christmas": f"MERRY {LOGO}",
                             "horror": "CAM 04  SUB-LEVEL B2", "seismograph": f"STATION {LOGO}",
-                            "orbit": f"{LOGO} GROUND STATION", "departures": f"GARE {LOGO}"}.get(SKIN_NAME)
+                            "orbit": f"{LOGO} GROUND STATION", "departures": f"GARE {LOGO}",
+                            "racing": f"{LOGO} RACING"}.get(SKIN_NAME)
              or f"{LOGO}::{args.user.upper()}")[:28]
     prompt = f"{args.user}@{args.host}:~$"[:40]
 
@@ -3618,6 +3744,8 @@ if __name__ == "__main__":
         ob_regions().save(THEME_DIR / "regions.png")
     elif SKIN_NAME == "departures":
         render_background_departures(title).save(THEME_DIR / "background.png")
+    elif SKIN_NAME == "racing":
+        render_background_racing(title).save(THEME_DIR / "background.png")
     elif SKIN_NAME == "horror":
         HR_TITLE, HR_JUMPSCARE = title, not args.no_jumpscare
         render_background_horror(title).save(THEME_DIR / "background.png")
@@ -3662,7 +3790,8 @@ if __name__ == "__main__":
              "horror": "BC250-Horror - a security camera, a corridor, and what moves when the lights go out",
              "seismograph": "BC250-Seismograph - your machine's tremors and the world's real earthquakes on one drum",
              "orbit": "BC250-Orbit - a ground station tracking the ISS, and when it passes over you",
-             "departures": "BC250-Departures - a station's split-flap departures board"}
+             "departures": "BC250-Departures - a station's split-flap departures board",
+             "racing": "BC250-Racing - a single-seater's steering wheel display, shift lights and start lights"}
     header = (f"# {names[SKIN_NAME]} for an AMD BC-250 Steam Machine\n"
               f"# Turing 3.5\" {'portrait' if PORTRAIT else 'landscape'}. GENERATED by make_theme.py: "
               "edit the script or its options and re-run it.\n"

@@ -103,6 +103,9 @@ def main():
                               for x in b._Draw.theme("Bc250Departures")["COLUMNS"]["TRAIN"]) if cells else ""
                 ok &= report(b._FlapBoard.flips >= 100 and cpu == "CPU",
                              f"{name}: {b._FlapBoard.flips} flaps turned, {len(cells)} cells, first train '{cpu}'")
+            if args.theme == "racing" and not args.screenshot:
+                ok &= report(b._Wheel.frames >= 100 and b._Wheel.shifts >= 1,
+                             f"{name}: the wheel ran {b._Wheel.frames} frames and shifted {b._Wheel.shifts} times")
             if args.theme == "horror" and not args.screenshot:
                 gentle = "--no-jumpscare" in args.extra
                 ok &= report(b._Horror.moves >= 3 and b._Horror.whispers >= 1 and (b._Horror.scares == 0) == gentle,

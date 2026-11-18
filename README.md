@@ -2,7 +2,7 @@
 
 [![tests](https://github.com/raphaeltournafond/bc250-themes/actions/workflows/tests.yml/badge.svg)](https://github.com/raphaeltournafond/bc250-themes/actions/workflows/tests.yml)
 
-Fourteen themes for [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python), made for a **3.5" Turing screen** (landscape or portrait) on an **AMD BC-250 Steam Machine running Bazzite**. Each has its own boot animation. Pick one with `--theme`:
+Fifteen themes for [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python), made for a **3.5" Turing screen** (landscape or portrait) on an **AMD BC-250 Steam Machine running Bazzite**. Each has its own boot animation. Pick one with `--theme`:
 
 <table>
   <tr>
@@ -24,10 +24,11 @@ Fourteen themes for [turing-smart-screen-python](https://github.com/mathoudebine
     <td align="center" width="20%"><img src="res/themes/BC250-Seismograph/preview.png" width="165" alt="Seismograph theme"><br><b>Seismograph</b><br><code>seismograph</code><br>real earthquakes, live</td>
     <td align="center" width="20%"><img src="res/themes/BC250-Orbit/preview.png" width="165" alt="Orbit theme"><br><b>Orbit</b><br><code>orbit</code><br>the ISS, and when it passes over you</td>
     <td align="center" width="20%"><img src="res/themes/BC250-Departures/preview.png" width="165" alt="Departures theme"><br><b>Departures</b><br><code>departures</code><br>split-flap station board</td>
+    <td align="center" width="20%"><img src="res/themes/BC250-Racing/preview.png" width="165" alt="Racing theme"><br><b>Racing</b><br><code>racing</code><br>a single-seater's wheel</td>
   </tr>
 </table>
 
-Nine of them show the same live data: CPU, GPU, system, and what the machine is playing or downloading; the departures board shows it too, as trains. The radar trades some of it for live flights around a point you choose, the horror theme for a camera watching a corridor you'd rather not look at, the seismograph for the world's real earthquakes, and the orbit theme for the International Space Station going round. Portrait layouts, boot animations and details are under [Themes](#themes).
+Nine of them show the same live data: CPU, GPU, system, and what the machine is playing or downloading; the departures board shows it too, as trains, and the racing wheel as revs, gears and tyres. The radar trades some of it for live flights around a point you choose, the horror theme for a camera watching a corridor you'd rather not look at, the seismograph for the world's real earthquakes, and the orbit theme for the International Space Station going round. Portrait layouts, boot animations and details are under [Themes](#themes).
 
 ## Quick start
 
@@ -53,7 +54,7 @@ That's it: the screen now starts with the boot animation every time the BC-250 b
 | To… | Run |
 |---|---|
 | update the theme | `git -C bc250-themes pull && bash bc250-themes/setup.sh` |
-| switch theme | `bash bc250-themes/setup.sh --theme gameboy` (or `retrowave`, `videotex`, `mission`, `minecraft`, `nixie`, `radar`, `halloween`, `christmas`, `horror`, `seismograph`, `orbit`, `departures`, `phosphor`) |
+| switch theme | `bash bc250-themes/setup.sh --theme gameboy` (or `retrowave`, `videotex`, `mission`, `minecraft`, `nixie`, `radar`, `halloween`, `christmas`, `horror`, `seismograph`, `orbit`, `departures`, `racing`, `phosphor`) |
 | change an option | `bash bc250-themes/setup.sh --night 23:30-08:00 --logo "MY RIG"` (remembered for next time) |
 | go back to the defaults | `bash bc250-themes/setup.sh --reset-options` |
 | remove it | `bash bc250-themes/setup.sh --uninstall` |
@@ -364,13 +365,42 @@ bash bc250-themes/setup.sh --theme departures
 
 </details>
 
+<details>
+<summary><b>Racing</b> <code>--theme racing</code>: the display of a single-seater's steering wheel</summary>
+
+<br>
+
+![racing landscape](res/themes/BC250-Racing/preview.png) ![racing portrait](res/themes/BC250-Racing/preview_portrait.png)
+
+The screen on a racing car's steering wheel, on carbon. The machine is the car.
+
+- **Shift lights:** they rise with the GPU's load like revs, green, then red, then blue. At the limiter (97 % and more) they all flash blue.
+- **The gear** in the middle follows the CPU's load, from 1 to 8. It shifts one gear at a time, the revs drop as the next gear bites, and it shows N when nothing runs.
+- **Delta:** the current FPS against the session's average, green when faster and red when slower. Beside it are the FPS and the lap time, which is the session's length.
+- **Four tyres** take their colour from what they measure: blue when cold, green in the window, orange when hot, red at the alert. Front left is the CPU (°C), front right the GPU (°C), rear left the APU's power (W) and rear right the memory (%).
+- **Throttle and ERS bars:** the CPU's load and the APU's power, in segments.
+- **The status line:** "ON TRACK Hades II" with the FPS and the race time, "PIT STOP" for a download, "TYRE WARMERS ON" for shaders, "CHEQUERED FLAG" for the last session, and "PARC FERME" / "engine off" when idle.
+- **Boot:** a radio check runs on the status line while the shift lights are tested. Then the five start lights come on one by one, hold for a moment nobody can guess, and go out: race start.
+
+```bash
+bash bc250-themes/setup.sh --theme racing
+```
+
+- The display is redrawn twelve times a second, and only what changed is sent to the screen. It uses the same thresholds as the other themes (`--cold`, `--hot`, `--alert`, `--pwr-low`, `--pwr-high`).
+- The delta and the FPS need MangoHud's FPS log, the same as the FPS column of the other themes (see [Quick start](#quick-start)).
+- Not affiliated with any racing series, team or game: everything is drawn by `make_theme.py`.
+
+![racing boot](res/themes/BC250-Racing/splash_preview.gif)
+
+</details>
+
 *Game Boy- and Minecraft-inspired fan themes, not affiliated with or endorsed by Nintendo, Mojang or Microsoft; they use no logos or game assets (all art is drawn by `make_theme.py`). Retrowave's logo uses the Race Space font that comes with the app (free for non-commercial use).*
 
 ## Options
 
 | Option | Default | Effect |
 |---|---|---|
-| `--theme NAME` | `phosphor` | `phosphor` (green terminal), `gameboy` (4-shade RPG status screen), `retrowave` (neon sunset), `videotex` (French videotex pages), `mission` (1969 mission control), `minecraft` (blocky inventory), `nixie` (Nixie tubes), `radar` (live flights), `halloween` (pumpkins and a graveyard), `christmas` (snow and Santa's sleigh), `horror` (a security camera, and what moves when the lights go out), `seismograph` (real earthquakes on a paper drum), `orbit` (the ISS, and when it passes over you) or `departures` (a split-flap station board) |
+| `--theme NAME` | `phosphor` | `phosphor` (green terminal), `gameboy` (4-shade RPG status screen), `retrowave` (neon sunset), `videotex` (French videotex pages), `mission` (1969 mission control), `minecraft` (blocky inventory), `nixie` (Nixie tubes), `radar` (live flights), `halloween` (pumpkins and a graveyard), `christmas` (snow and Santa's sleigh), `horror` (a security camera, and what moves when the lights go out), `seismograph` (real earthquakes on a paper drum), `orbit` (the ISS, and when it passes over you), `departures` (a split-flap station board) or `racing` (a single-seater's steering wheel display) |
 | `--portrait` | landscape | portrait layout (320×480): panels stacked, 2×3 grid |
 | `--logo TEXT` / `--subtitle TEXT` | `BC-250` / `STEAM MACHINE` | boot splash title and the line under it |
 | `--user NAME` / `--host NAME` | your login / hostname | the `user@host:~$` prompt |
