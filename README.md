@@ -488,6 +488,11 @@ It fetches turing-smart-screen-python 3.10.0 into `tests/.cache` and runs it on 
 | `check_boot.py` | each boot animation is pixel-exact on the screen, short enough, and hands over cleanly to the dashboard |
 | `check_app.py` | the whole app: the screen shows what every widget meant to draw, with one full-screen transfer only, and the radar's sweep never stalls |
 
+On GitHub, `tests/run.py` runs on Python 3.12, 3.14 and 3.15 (Bazzite moves to each new Python soon after it comes out). A second job lints the shell scripts with `shellcheck` and runs `tests/check_launcher.sh python3.14 python3.15` (Linux only, it installs the real libraries). That script takes `bc250_python.sh` through what an upgrade of the system's Python does to the monitor:
+- the app's `.venv` left with the old version's libraries is rebuilt;
+- a missing library is installed into `.venv` without rebuilding it;
+- `--run` starts an app release that refuses the new Python.
+
 After changing a theme, `python tools/make_previews.py THEME` regenerates its committed files and the README previews (recorded on the same emulated screen, so the GIFs play at the real speed). The radar's tests use saved data around Paris CDG (`tests/fixtures`), never the network.
 
 Also for the BC-250: [bc250-oled](https://github.com/raphaeltournafond/bc250-oled), stats on a tiny I2C OLED wired to the board, no USB.

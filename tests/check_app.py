@@ -120,6 +120,10 @@ def main():
         os._exit(0 if ok else 1)
 
     threading.Thread(target=verdict, name="verdict", daemon=True).start()
+    # on a Python newer than the app's release accepts, started anyway, as bc250_python.sh --run does on the BC-250
+    import library.pythoncheck as check
+    if sys.platform != "win32" and sys.version_info[:2] > tuple(check.MAX_PYTHON):
+        check.MAX_PYTHON = sys.version_info[:2]
     sys.argv = ["main.py"]
     runpy.run_path("main.py", run_name="__main__")
 

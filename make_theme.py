@@ -2972,14 +2972,14 @@ def hr_figure():
     hd.ellipse((hx - 0.018 * W_, hy + 0.012 * H_, hx + 0.018 * W_, hy + 0.05 * H_), fill=hollow)
     head = head.rotate(-HR_FACE_TILT, center=(hx, hy), resample=Image.BICUBIC)
     art.alpha_composite(head)
-    art = art.resize((w, h), Image.LANCZOS).filter(ImageFilter.GaussianBlur(1.1))
+    art = art.convert("RGBa").resize((w, h), Image.LANCZOS).filter(ImageFilter.GaussianBlur(1.1)).convert("RGBA")
     rnd = random.Random(13)  # the camera's grain on it too
     out = art.load()
     for j in range(h):
         for i in range(w):
             r, g, b, a = out[i, j]
-            if a:
-                n = rnd.uniform(0.82, 1.1)
+            n = rnd.uniform(0.82, 1.1)  # drawn for every pixel: one edge pixel more or less (Pillow 12 and 13 resize
+            if a:                       # edges a little differently) must not shift the grain of all the ones after
                 out[i, j] = (min(255, int(r * n)), min(255, int(g * n)), min(255, int(b * n)), a)
     return art
 

@@ -26,10 +26,16 @@ def generate(theme, portrait):
     return os.path.join("res", "themes", THEMES[theme])
 
 
+def seen(path):
+    """A picture as the screen shows it: a sprite's transparent parts over black, whatever colour they hold."""
+    image = Image.open(path).convert("RGBA")
+    return Image.alpha_composite(Image.new("RGBA", image.size, (0, 0, 0, 255)), image).convert("RGB")
+
+
 def same_picture(a, b):
     """Pixels that differ, and the largest difference of one channel."""
     import numpy
-    difference = numpy.asarray(ImageChops.difference(Image.open(a).convert("RGB"), Image.open(b).convert("RGB")))
+    difference = numpy.asarray(ImageChops.difference(seen(a), seen(b)))
     return int(numpy.count_nonzero(difference.any(axis=2))), int(difference.max())
 
 
