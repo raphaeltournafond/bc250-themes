@@ -495,6 +495,15 @@ On GitHub, `tests/run.py` runs on Python 3.12, 3.14 and 3.15 (Bazzite moves to e
 - a missing library is installed into `.venv` without rebuilding it;
 - `--run` starts an app release that refuses the new Python, and the app keeps running with the theme.
 
+### Adding a theme
+
+A theme is declared once, at the end of its generator module, and everything else reads that declaration (`generator/registry.py`): `make_theme.py --theme`, `theme.yaml`, the checks and the previews. `install_bc250.sh` takes its name from its folder in `res/themes`. A new theme needs:
+
+1. its colours in `SKINS` (`generator/base.py`, with its folder `BC250-<Name>`), and its block in `set_layout()` (`generator/cfg.py`);
+2. `generator/themes/<theme>.py`: its artwork, then `THEME = Theme(name=..., description=..., render=...)` with whatever it has of its own: a default `title`, its `status_line` words, its `boot` (the `STYLE` of its boot animation), the `widgets` only it has, and whether the checks run the whole app in portrait too (`portrait_app`);
+3. if it has widgets or a boot animation of its own: `library/sensors/bc250/themes/<theme>.py`, the boot added with `_Splash.STYLES["<style>"] = ...` and, for a widget that carries on from what the boot leaves, `_Splash.takes_over(...)` (the package imports every module of `themes/` by itself);
+4. `python tools/make_previews.py <theme>` for its files and pictures, and its section in this README. The checks pick it up by themselves; what is particular to it (the radar's sweep, the wheel's gear changes) goes in `tests/check_app.py`.
+
 After changing a theme, `python tools/make_previews.py THEME` regenerates its committed files and the README previews (recorded on the same emulated screen, so the GIFs play at the real speed). The radar's tests use saved data around Paris CDG (`tests/fixtures`), never the network.
 
 Also for the BC-250: [bc250-oled](https://github.com/raphaeltournafond/bc250-oled), stats on a tiny I2C OLED wired to the board, no USB.

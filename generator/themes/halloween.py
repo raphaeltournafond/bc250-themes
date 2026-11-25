@@ -3,11 +3,12 @@
 import math
 import random
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw
 
 from .. import cfg
 from ..base import CH, GRID_LABELS, HEADER_BL, HEADER_H, S
-from ..draw import Canvas, font, header_layout, mix
+from ..draw import Canvas, font, header_layout, mix, rgb
+from ..registry import Theme
 
 
 # Halloween status line wording ("HAUNTING Hades II"; idle: "SLUMBERING" / "the crypt is quiet")
@@ -247,3 +248,37 @@ def render_splash_halloween(logo=True):
     for p in sl["pumpkins"]:
         pumpkin(c, *p)
     return c.finish()
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_halloween(title).save(out / "background.png")
+    full, nologo = render_splash_halloween(), render_splash_halloween(logo=False)
+    cfg.HW_REVEAL_BOX = ImageChops.difference(full, nologo).getbbox() or (0, 0, 1, 1)
+    full.save(out / "splash.png")
+    nologo.save(out / "splash_nologo.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt): a seance is a session too."""
+    return {"CMD_WORDS": HALLOWEEN_WORDS, "LABEL_COLOR": rgb(cfg.SKIN["mid"]),
+            "COL_WORDS": {"SESSION": "SEANCE", "TIME": "SEANCE"}}
+
+
+def boot():
+    """Its part of bc250_splash in theme.yaml."""
+    sl = cfg.SPLASH_LAYOUT
+    return {"STYLE": "halloween", "LOGO_BOX": list(cfg.HW_REVEAL_BOX), "SKY": [0, 0, cfg.W, sl["horizon"]],
+            "MOON": list(sl["moon"]), "PUMPKINS": [pumpkin_face(*p) for p in sl["pumpkins"]],
+            "BAT": [list(p) for p in BAT_SHAPE], "TEXT": rgb(cfg.SKIN["value"]), "GREEN": rgb(cfg.SKIN["accent"]),
+            "CANDLE": rgb(HW_CANDLE), "SILHOUETTE": rgb(HW_GROUND), "CAPTION": list(sl["caption"])}
+
+
+THEME = Theme(
+    name="halloween",
+    description="pumpkins, cobwebs and a graveyard under the full moon",
+    render=render,
+    title="HAUNTED {LOGO}",
+    status_line=status_line,
+    boot=boot,
+)

@@ -4,7 +4,8 @@ from PIL import Image, ImageDraw
 
 from .. import cfg
 from ..base import CH, HEADER_BL, M, S, VT
-from ..draw import Canvas, font, header_layout, spaced
+from ..draw import Canvas, font, header_layout, rgb, spaced
+from ..registry import Theme
 
 
 # videotex ticker wording ("EN COURS : Hades II"; idle: "EN VEILLE" / "3615 <CODE>")
@@ -120,3 +121,36 @@ def render_splash_videotex(title, layer="full"):
     c.d.rectangle((fx2 - 54, fy1 + 3, fx2 - 12, fy2 - 3), fill=VT["w"])
     c.label(fx2 - 33, fy2 - 6, "ENVOI", VT["k"], anchor="ms", glow=False)
     return c.finish()
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_videotex(title).save(out / "background.png")
+    render_splash_videotex(title, "full").save(out / "splash.png")
+    render_splash_videotex(title, "blank").save(out / "splash_blank.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt)."""
+    return {"CMD_WORDS": dict(VIDEOTEX_WORDS, **{"idle-text": videotex_code(cfg.LOGO)}),
+            "LABEL_COLOR": rgb(cfg.SKIN["accent"]), "PROGRESS_STYLE": "mosaic",
+            "COL_WORDS": {"DONE": "FAIT", "ETA": "RESTE", "RATE": "DÉBIT", "SESSION": "DURÉE",
+                          "TIME": "DURÉE", "PEAK C/G": "PIC C/G"}}
+
+
+def boot():
+    """Its part of bc250_splash in theme.yaml."""
+    sl = cfg.SPLASH_LAYOUT
+    return {"STYLE": "videotex", "IMAGE_BLANK": "splash_blank.png", "CODE": videotex_code(cfg.LOGO),
+            "GREEN": rgb(VT["g"]), "BLUE": rgb(VT["b"]), "STATUS_CELL": [cfg.W - 18, 2, 12, 13],
+            "DIAL_X": sl["dial_x"], "DIAL_BL": list(sl["dial_bl"]), "FOOTER": list(sl["footer"])}
+
+
+THEME = Theme(
+    name="videotex",
+    description="40-column, 8-colour videotex pages",
+    render=render,
+    title="P250 {LOGO}",
+    status_line=status_line,
+    boot=boot,
+)

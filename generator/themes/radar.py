@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw
 from .. import cfg
 from ..base import CLOCK_CHARS, FONT, HEADER_BL, HEADER_H, M, S
 from ..draw import Canvas, heat_colors, rgb, text
+from ..registry import Theme
 
 
 # Radar status line wording
@@ -247,3 +248,39 @@ def radar_theme(theme):
     }
     theme["bc250_splash"].update({k: v for k, v in radar_spec().items() if k != "BACKGROUND_IMAGE"})
     return theme
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_radar(title).save(out / "background.png")
+    for old in ("splash.png", "splash_blank.png"):  # the boot now runs on background.png
+        (out / old).unlink(missing_ok=True)
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt)."""
+    return {"CMD_WORDS": RADAR_WORDS, "LABEL_COLOR": rgb(cfg.SKIN["mid"]), "SMALL_FALLBACK": True,
+            "COL_WORDS": {"SESSION": "TIME", "PEAK C/G": "PEAK", "SHADERS": "DONE"}}
+
+
+def boot():
+    """Its part of bc250_splash in theme.yaml."""
+    sl = cfg.SPLASH_LAYOUT
+    cx, cy, r = cfg.RADAR["scope"]
+    step = nice_step(cfg.RADAR["km"])
+    rings = [round(ring * r / cfg.RADAR["km"]) for ring in range(step, int(cfg.RADAR["km"]) + 1, step)]
+    return {"STYLE": "radar", "IMAGE": "background.png", "LOG": list(sl["log"]),
+            "RINGS": [v for v in rings if v < r - 3] + [r - 1],
+            "MAP_COUNT": sum(1 for a in cfg.RADAR["map"][0] if a[3] != "small_airport")}
+
+
+THEME = Theme(
+    name="radar",
+    description="live aircraft around a point (free community ADS-B data)",
+    render=render,
+    title="{LOGO} RADAR",
+    status_line=status_line,
+    boot=boot,
+    widgets=lambda theme, title, user: radar_theme(theme),
+    portrait_app=True,  # a layout and threads of its own
+)

@@ -7,6 +7,7 @@ from PIL import Image, ImageChops, ImageDraw
 from .. import cfg
 from ..base import CH, L, M, S
 from ..draw import Canvas, font_file, rgb, spaced, text
+from ..registry import Theme
 
 
 # Nixie status line wording
@@ -234,3 +235,34 @@ def nixie_theme(theme, title):
     }
     theme["STATS"] = stats
     return theme
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    nixie_layout(cfg.PORTRAIT)  # here: it needs the --alert and power options
+    render_background_nixie(title).save(out / "background.png")
+    render_splash_nixie(prompt).save(out / "splash.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt)."""
+    return {"CMD_WORDS": NIXIE_WORDS, "LABEL_COLOR": rgb(NX_BRASS)}
+
+
+def boot():
+    """Its part of bc250_splash in theme.yaml."""
+    sl = cfg.SPLASH_LAYOUT
+    return {"STYLE": "nixie", "NIXIE_FONT": NIXIE_FONT, "TUBE_XS": sl["tube_xs"], "TUBE_Y": sl["tube_y"],
+            "TUBE_W": sl["tube"][0], "TUBE_H": sl["tube"][1], "COLONS": sl["colons"], "LAMPS": sl["lamps"],
+            "LAMP_NAMES": list(NX_LAMP_LABELS), "TEXT_BL": sl["text_bl"], "GLOW": rgb((255, 90, 18)),
+            "CORE": rgb((255, 196, 120)), "LAMP_ON": rgb((255, 60, 30))}
+
+
+THEME = Theme(
+    name="nixie",
+    description="Nixie tube instrument panel",
+    render=render,
+    status_line=status_line,
+    boot=boot,
+    widgets=lambda theme, title, user: nixie_theme(theme, title),
+)

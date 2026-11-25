@@ -33,12 +33,15 @@ BC250_MANGOHUD_DIR (MangoHud log folder).
 Classes follow the CustomDataSource interface (as_numeric / as_string / last_values) without inheriting it:
 sensors_custom.py re-exports this package, so importing it back here would be circular."""
 
-from . import base, draw, hardware, steam, prompt, screen, splash, readings
-from .themes import (christmas, departures, gameboy, halloween, horror, minecraft, mission, nixie, orbit, racing, radar,
-                     retrowave, seismograph, videotex)
+import importlib
+import pkgutil
 
-MODULES = (base, draw, hardware, steam, prompt, screen, splash, readings, christmas, departures, gameboy, halloween,
-           horror, minecraft, mission, nixie, orbit, racing, radar, retrowave, seismograph, videotex)
+from . import base, draw, hardware, steam, prompt, screen, splash, readings, themes
+
+# every module of themes/ (each registers its boot and its widgets as it is imported): a new theme is a new module
+THEME_MODULES = tuple(importlib.import_module(f"{themes.__name__}.{module.name}")
+                      for module in sorted(pkgutil.iter_modules(themes.__path__), key=lambda module: module.name))
+MODULES = (base, draw, hardware, steam, prompt, screen, splash, readings) + THEME_MODULES
 
 for _module in MODULES:  # an error in a widget shows "--" rather than stopping the widgets after it
     for _obj in list(vars(_module).values()):

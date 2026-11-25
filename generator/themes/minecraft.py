@@ -6,7 +6,8 @@ from PIL import Image, ImageDraw
 
 from .. import cfg
 from ..base import CH, HEADER_BL, HEADER_H, S
-from ..draw import Canvas, font, header_layout, mix
+from ..draw import Canvas, font, header_layout, mix, rgb
+from ..registry import Theme
 
 
 # Minecraft-style wording of the status line ("PLAYING Hades II"; idle: "AFK" / "rafale is AFK")
@@ -174,3 +175,33 @@ def render_splash_minecraft():
     if (len(edition) + len(notice) + 2) * CH[S] <= cfg.W - 8:  # the edition line only when it fits beside the notice
         c.label(4, sl["footer_bl"], edition, (255, 255, 255), glow=False)
     return c.finish()
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_minecraft(title).save(out / "background.png")
+    render_splash_minecraft().save(out / "splash.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt): white and yellow on the dark chat box."""
+    return {"CMD_WORDS": dict(MINECRAFT_WORDS, **{"idle-text": f"{user} is AFK"}),
+            "BRIGHT": rgb((255, 255, 255)), "LABEL_COLOR": rgb((255, 255, 85)),
+            "COL_WORDS": {"SESSION": "PLAYTIME", "TIME": "PLAYTIME"}}
+
+
+def boot():
+    """Its part of bc250_splash in theme.yaml."""
+    sl = cfg.SPLASH_LAYOUT
+    return {"STYLE": "minecraft", "SPLASH_TEXTS": MINECRAFT_SPLASHES, "SPLASH_AT": list(sl["splash_at"]),
+            "GREEN": rgb((0, 150, 0)), "TEXT": rgb(cfg.SKIN["value"]), "WHITE": rgb((255, 255, 255)),
+            "TITLE_BL": sl["title_bl"]}
+
+
+THEME = Theme(
+    name="minecraft",
+    description="blocky inventory screen (fan theme, not affiliated with Mojang)",
+    render=render,
+    status_line=status_line,
+    boot=boot,
+)

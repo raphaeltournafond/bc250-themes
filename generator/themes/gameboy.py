@@ -2,7 +2,8 @@
 
 from .. import cfg
 from ..base import CH, DMG, GRID_LABELS, HEADER_BL, HEADER_H, M
-from ..draw import Canvas, header_layout, logo_baseline, logo_size, spaced
+from ..draw import Canvas, header_layout, logo_baseline, logo_size, rgb, spaced
+from ..registry import Theme
 
 
 # RPG wording of the Game Boy dialog box ("RAFALE IS PLAYING")
@@ -72,3 +73,31 @@ def render_splash_gameboy(title, prompt, logo=True, menu=True):
         c.hp_bar(x, y, w, h, "HP" if x > sl["label_x"] + 60 else "")
         c.label(cfg.W // 2, sl["footer_bl"], "PRESS START", mid, anchor="ms", glow=False)
     return c.finish()
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_gameboy(title, user).save(out / "background.png")
+    render_splash_gameboy(title, prompt).save(out / "splash.png")
+    render_splash_gameboy(title, prompt, logo=False).save(out / "splash_nologo.png")
+    render_splash_gameboy(title, prompt, logo=False, menu=False).save(out / "splash_blank.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt)."""
+    return {"CMD_WORDS": GAMEBOY_WORDS, "CURSOR": "▼", "LABEL_COLOR": rgb(cfg.SKIN["mid"])}
+
+
+def boot():
+    """Its part of bc250_splash in theme.yaml."""
+    return {"STYLE": "gameboy", "IMAGE_BLANK": "splash_blank.png", "LIGHT": rgb(DMG[1])}
+
+
+THEME = Theme(
+    name="gameboy",
+    description="4-shade handheld RPG status screen",
+    render=render,
+    status_line=status_line,
+    boot=boot,
+    pixel_logo=True,  # BIOS-style boot
+)

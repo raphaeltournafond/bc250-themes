@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Installs a BC-250 theme (Phosphor, Game Boy, Retrowave, Videotex, Mission, Minecraft, Nixie, Radar, Halloween, Christmas, Horror, Seismograph, Orbit, Departures or Racing) into a turing-smart-screen-python checkout.
+# Installs a BC-250 theme (one of res/themes/BC250-*: see the README) into a turing-smart-screen-python checkout.
 # Usage: ./install_bc250.sh /path/to/turing-smart-screen-python [options]
-#   --theme NAME   phosphor (green terminal), gameboy (RPG screen), retrowave (neon), videotex (Minitel), mission (Apollo console), minecraft, nixie, radar (live flights), halloween, christmas, horror, seismograph (real earthquakes), orbit (the ISS), departures (split-flap board) or racing (steering wheel display)
+#   --theme NAME   which theme: phosphor (default), or the name of another folder of res/themes in lower case
 #   --user NAME    user in the "user@host:~$" prompt   (default: your login, $(whoami))
 #   --host NAME    host in the prompt                  (default: $(hostname -s))
 #   --title TEXT   header text                         (default: <LOGO>::<USER>)
@@ -26,9 +26,18 @@
 set -euo pipefail
 
 SRC="$(cd "$(dirname "$0")" && pwd)"
+theme_names() {  # every theme: the folders res/themes/BC250-<Name>, as --theme takes them (gameboy for BC250-GameBoy)
+  local folder names=()
+  for folder in "$SRC"/res/themes/BC250-*/; do
+    folder="$(basename "$folder")"
+    names+=("${folder#BC250-}")
+  done
+  echo "${names[*],,}"
+}
 REPO="${1:-}"
 if [[ -z "$REPO" || ! -f "$REPO/main.py" || ! -f "$REPO/library/sensors/sensors_custom.py" ]]; then
   sed -n '3,25p' "$0" | sed 's/^# \{0,1\}//' >&2
+  echo "Themes: $(theme_names)" >&2
   exit 1
 fi
 shift
@@ -44,24 +53,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-case "$THEME_NAME" in
-  phosphor) THEME_FOLDER=BC250-Phosphor ;;
-  gameboy) THEME_FOLDER=BC250-GameBoy ;;
-  retrowave) THEME_FOLDER=BC250-Retrowave ;;
-  videotex) THEME_FOLDER=BC250-Videotex ;;
-  mission) THEME_FOLDER=BC250-Mission ;;
-  minecraft) THEME_FOLDER=BC250-Minecraft ;;
-  nixie) THEME_FOLDER=BC250-Nixie ;;
-  radar) THEME_FOLDER=BC250-Radar ;;
-  halloween) THEME_FOLDER=BC250-Halloween ;;
-  christmas) THEME_FOLDER=BC250-Christmas ;;
-  horror) THEME_FOLDER=BC250-Horror ;;
-  seismograph) THEME_FOLDER=BC250-Seismograph ;;
-  orbit) THEME_FOLDER=BC250-Orbit ;;
-  departures) THEME_FOLDER=BC250-Departures ;;
-  racing) THEME_FOLDER=BC250-Racing ;;
-  *) echo "Unknown theme: $THEME_NAME (phosphor, gameboy, retrowave, videotex, mission, minecraft, nixie, radar, halloween, christmas, horror, seismograph, orbit, departures or racing)" >&2; exit 1 ;;
-esac
+THEME_FOLDER=""
+for folder in "$SRC"/res/themes/BC250-*/; do
+  folder="$(basename "$folder")"
+  name="${folder#BC250-}"
+  if [[ "${name,,}" == "${THEME_NAME,,}" ]]; then THEME_FOLDER="$folder"; THEME_NAME="${name,,}"; fi
+done
+if [[ -z "$THEME_FOLDER" ]]; then
+  echo "Unknown theme: $THEME_NAME (themes: $(theme_names))" >&2
+  exit 1
+fi
 
 for theme in "$SRC"/res/themes/BC250-*; do cp -r "$theme" "$REPO/res/themes/"; done
 rm -rf "$REPO/library/sensors/bc250"  # (no module left from an older version)

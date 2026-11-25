@@ -3,6 +3,7 @@
 from .. import cfg
 from ..base import CH, CLOCK_CHARS, FONT, HEADER_BL, HEADER_H, M, S, SEISMO_LAYOUT
 from ..draw import Canvas, heat_colors, rgb, text, world_map
+from ..registry import Theme
 
 
 # Seismograph status line wording ("EPICENTRE Hades II"; idle: "BACKGROUND NOISE" / "all stations quiet")
@@ -96,3 +97,25 @@ def seismo_theme(theme, title):
                                   "ROWS_ON_PAPER": spec["ROWS"], "INKS": spec["INKS"], "MIN_MAG": spec["MIN_MAG"],
                                   "MARGIN": spec["MARGIN"]})
     return theme
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_seismograph(title).save(out / "background.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt)."""
+    return {"CMD_WORDS": SEISMO_WORDS, "LABEL_COLOR": rgb(cfg.SKIN["mid"]),
+            "COL_WORDS": {"SESSION": "DURATION", "TIME": "DURATION"}}
+
+
+THEME = Theme(
+    name="seismograph",
+    description="your machine's tremors and the world's real earthquakes on one drum",
+    render=render,
+    title="STATION {LOGO}",
+    status_line=status_line,
+    widgets=lambda theme, title, user: seismo_theme(theme, title),
+    portrait_app=True,  # a layout and threads of its own
+)

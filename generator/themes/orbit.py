@@ -7,6 +7,7 @@ from PIL import Image, ImageDraw
 from .. import cfg
 from ..base import CH, CLOCK_CHARS, FONT, HEADER_BL, HEADER_H, M, ORBIT_LAYOUT, S, SM_WORLD
 from ..draw import Canvas, heat_colors, rgb, text, world_map
+from ..registry import Theme
 
 
 # Orbit status line wording ("ON BOARD Hades II"; idle: "STATION KEEPING" / "all systems nominal")
@@ -212,3 +213,27 @@ def orbit_theme(theme, title):
     theme["bc250_splash"].update({"STYLE": "orbit", "IMAGE": "background.png", "LOG": list(ol["log"]),
                                   "LOG_COLUMNS": ol["log_columns"], "LOG_STEP": ol["log_step"]})
     return theme
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_orbit(title).save(out / "background.png")
+    ob_regions().save(out / "regions.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt): mission elapsed time."""
+    return {"CMD_WORDS": ORBIT_WORDS, "LABEL_COLOR": rgb(cfg.SKIN["mid"]),
+            "COL_WORDS": {"SESSION": "MET", "TIME": "MET"}}
+
+
+THEME = Theme(
+    name="orbit",
+    description="a ground station tracking the ISS, and when it passes over you",
+    render=render,
+    title="{LOGO} GROUND STATION",
+    status_line=status_line,
+    widgets=lambda theme, title, user: orbit_theme(theme, title),
+    portrait_app=True,  # a layout and threads of its own
+    preview_options=("--orbit-lat", "48.8584", "--orbit-lon", "2.2945"),  # the Eiffel Tower
+)

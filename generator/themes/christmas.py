@@ -3,9 +3,12 @@
 import math
 import random
 
+from PIL import ImageChops
+
 from .. import cfg
 from ..base import CH, GRID_LABELS, HEADER_BL, HEADER_H, S
-from ..draw import Canvas, header_layout, mix
+from ..draw import Canvas, header_layout, mix, rgb
+from ..registry import Theme
 from .halloween import logo_blocks, moon
 
 
@@ -258,3 +261,36 @@ def render_splash_christmas(logo=True):
     snowman(c, *sl["snowman"])
     present(c, *sl["present"])
     return c.finish()
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_christmas(title).save(out / "background.png")
+    full, nologo = render_splash_christmas(), render_splash_christmas(logo=False)
+    cfg.CM_REVEAL_BOX = ImageChops.difference(full, nologo).getbbox() or (0, 0, 1, 1)
+    full.save(out / "splash.png")
+    nologo.save(out / "splash_nologo.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt)."""
+    return {"CMD_WORDS": CHRISTMAS_WORDS, "LABEL_COLOR": rgb(cfg.SKIN["mid"])}
+
+
+def boot():
+    """Its part of bc250_splash in theme.yaml."""
+    sl = cfg.SPLASH_LAYOUT
+    return {"STYLE": "christmas", "LOGO_BOX": list(cfg.CM_REVEAL_BOX), "SKY": [0, 0, cfg.W, sl["horizon"]],
+            "LIGHTS": tree_lights(*sl["tree"]), "SLEIGH": sleigh_shapes(), "TEXT": rgb(cfg.SKIN["value"]),
+            "GREEN": rgb(cfg.SKIN["green"]), "SNOW": rgb(CM_SNOW), "HOLLY": rgb(CM_HOLLY),
+            "CAPTION": list(sl["caption"])}
+
+
+THEME = Theme(
+    name="christmas",
+    description="snow, a lit tree and Santa's sleigh on a silent night",
+    render=render,
+    title="MERRY {LOGO}",
+    status_line=status_line,
+    boot=boot,
+)

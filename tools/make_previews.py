@@ -14,11 +14,10 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TESTS = os.path.join(REPO, "tests")
 sys.path.insert(0, TESTS)
-from common import THEMES  # noqa: E402
+from common import REGISTRY, THEMES  # noqa: E402
 from run import prepare_app, test_env  # noqa: E402
 
 PREVIEW_OPTIONS = ["--user", "rafale", "--host", "bazzite2"]  # the names the README previews have always shown
-THEME_PREVIEW_OPTIONS = {"orbit": ["--orbit-lat", "48.8584", "--orbit-lon", "2.2945"]}  # passes over the Eiffel Tower
 PREVIEWS = ("preview.png", "preview_portrait.png", "preview_encounter.png", "splash_preview.gif",
             "splash_preview_portrait.gif")
 
@@ -79,7 +78,7 @@ def main():
             continue
         for portrait, suffix in ((False, ""), (True, "_portrait")):
             orientation = ["--portrait"] if portrait else []
-            options = PREVIEW_OPTIONS + THEME_PREVIEW_OPTIONS.get(theme, [])
+            options = PREVIEW_OPTIONS + list(REGISTRY[theme].preview_options)
             check(app, env, "check_boot.py", theme, *orientation,
                   "--gif", os.path.join(committed, f"splash_preview{suffix}.gif"), "--", *options)
             check(app, env, "check_app.py", theme, *orientation,

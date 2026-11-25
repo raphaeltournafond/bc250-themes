@@ -3,6 +3,7 @@
 from .. import cfg
 from ..base import CH, GRID_LABELS, HEADER_BL, HEADER_H, S
 from ..draw import Canvas, font, header_layout, logo_baseline, logo_size, spaced
+from ..registry import Theme
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -76,3 +77,26 @@ def render_splash_phosphor(title, prompt, logo=True):
         c.label(fx, fy, "Press DEL to enter SETUP" if what == "press" else prompt, cfg.SKIN["dim"],
                 anchor="rs" if side == "right" else "ls")
     return c.finish()
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_phosphor(title, prompt).save(out / "background.png")
+    render_splash_phosphor(title, prompt).save(out / "splash.png")
+    render_splash_phosphor(title, prompt, logo=False).save(out / "splash_nologo.png")
+    Canvas().finish().save(out / "splash_blank.png")
+
+
+def boot():
+    """Its part of bc250_splash in theme.yaml: the dark tube the warm-up starts from (only the text has to be sent
+    after it)."""
+    return {"IMAGE_BLANK": "splash_blank.png"}
+
+
+THEME = Theme(
+    name="phosphor",
+    description="retro P1 phosphor terminal",
+    render=render,
+    boot=boot,
+    pixel_logo=True,  # BIOS-style boot
+)

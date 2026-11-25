@@ -2,7 +2,8 @@
 
 from .. import cfg
 from ..base import CH, CLOCK_CHARS, HEADER_BL, L, M, S
-from ..draw import Canvas, header_layout
+from ..draw import Canvas, header_layout, rgb
+from ..registry import Theme
 
 
 # mission wording ("FLIGHT: Hades II"; idle: "HOLDING" / "AWAITING GO")
@@ -109,3 +110,33 @@ def render_splash_mission():
     c.label(bx1 + 6, by1 + 13, "COUNTDOWN", cfg.SKIN["dim"], glow=False)
     crt_window(c, sl["crt"])
     return c.finish()
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_mission(title).save(out / "background.png")
+    render_splash_mission().save(out / "splash.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt)."""
+    return {"CMD_WORDS": MISSION_WORDS, "LABEL_COLOR": rgb(cfg.SKIN["accent"]),
+            "COL_WORDS": {"SESSION": "FLT TIME", "TIME": "FLT TIME", "PEAK C/G": "PEAK THRM"}}
+
+
+def boot():
+    """Its part of bc250_splash in theme.yaml."""
+    sl = cfg.SPLASH_LAYOUT
+    return {"STYLE": "mission", "IMAGE_BLANK": "splash.png", "GREEN": rgb(cfg.SKIN["green"]),
+            "COUNT_BOX": list(sl["count_box"]), "COUNT_BL": sl["count_bl"], "HEAD_BL": sl["head_bl"],
+            "LIFTOFF_BL": sl["liftoff_bl"]}
+
+
+THEME = Theme(
+    name="mission",
+    description="1969 mission control console",
+    render=render,
+    title="MCC {LOGO}",
+    status_line=status_line,
+    boot=boot,
+)

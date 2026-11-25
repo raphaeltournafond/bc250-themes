@@ -20,7 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 APP_URL, APP_RELEASE = "https://github.com/mathoudebine/turing-smart-screen-python", "3.10.0"
 sys.path.insert(0, HERE)
-from common import THEMES, fake_bc250  # noqa: E402
+from common import REGISTRY, THEMES, fake_bc250  # noqa: E402
 
 
 def prepare_app(path):
@@ -110,11 +110,13 @@ def main():
             if args.quick and theme != "radar":
                 continue
             results.append(run(app, env, "check_app.py", theme))
-        for theme in ("radar", "horror", "seismograph", "orbit", "departures", "racing"):  # own layouts and threads
-            if theme in themes and not args.quick:
+        for theme in themes:
+            if args.quick:
+                continue
+            if REGISTRY[theme].portrait_app:  # a layout and threads of its own
                 results.append(run(app, env, "check_app.py", theme, "--portrait"))
-        if "horror" in themes and not args.quick:
-            results.append(run(app, env, "check_app.py", "horror", "--", "--no-jumpscare"))
+            for options in REGISTRY[theme].app_variants:
+                results.append(run(app, env, "check_app.py", theme, "--", *options))
 
     passed = sum(1 for ok, _ in results if ok)
     checks = sum(n for _, n in results)

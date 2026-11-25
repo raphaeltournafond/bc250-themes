@@ -2,11 +2,12 @@
 
 import random
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 from .. import cfg
 from ..base import CH, GRID_LABELS, HEADER_BL, HEADER_H, RETRO_LOGO_FONT, RETRO_TAG_FONT, S
-from ..draw import Canvas, font, font_file, header_layout, mix, prompt_prefix, spaced
+from ..draw import Canvas, font, font_file, header_layout, mix, prompt_prefix, rgb, spaced
+from ..registry import Theme
 
 
 # arcade wording of the retrowave prompt ("1UP RAFALE NOW PLAYING", idle: "PRESS START" / "INSERT COIN")
@@ -217,3 +218,38 @@ def render_splash_retrowave(layer="full"):
                  stroke_width=2, stroke_fill=cfg.SKIN["ink"])
         c.g.text((cfg.W // 2, sl["sub_bl"]), sub, font=f, fill=mix(cfg.SKIN["value"], (0, 0, 0), 0.5), anchor="ms")
     return c.finish()
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_retrowave(title, user).save(out / "background.png")
+    full, nologo = render_splash_retrowave("full"), render_splash_retrowave("nologo")
+    cfg.RETRO_REVEAL_BOX = ImageChops.difference(full, nologo).getbbox() or (0, 0, 1, 1)
+    full.save(out / "splash.png")
+    nologo.save(out / "splash_nologo.png")
+    render_splash_retrowave("blank").save(out / "splash_blank.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt)."""
+    return {"CMD_WORDS": RETRO_WORDS, "LABEL_COLOR": rgb(cfg.SKIN["accent"])}
+
+
+def boot():
+    """Its part of bc250_splash in theme.yaml."""
+    sl = cfg.SPLASH_LAYOUT
+    logo = retro_logo(cfg.LOGO)
+    return {"STYLE": "retrowave", "IMAGE_BLANK": "splash_blank.png", "LOGO_FONT": RETRO_LOGO_FONT,
+            "LOGO_SIZE": logo["size"], "LOGO_CENTER": list(sl["logo_center"]),
+            "LOGO_BOX": list(logo["face_box"]), "REVEAL_BOX": list(cfg.RETRO_REVEAL_BOX),
+            "HORIZON": sl["horizon"], "PANEL": list(sl["panel"]), "GRID_COLOR": rgb(cfg.SKIN["mid"]),
+            "GRID_SPACING": cfg.W // 8, "FOOTER_BL": sl.get("footer_bl", 0)}
+
+
+THEME = Theme(
+    name="retrowave",
+    description="neon synthwave sunset",
+    render=render,
+    status_line=status_line,
+    boot=boot,
+)

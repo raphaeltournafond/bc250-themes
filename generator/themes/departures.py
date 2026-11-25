@@ -3,6 +3,7 @@
 from .. import cfg
 from ..base import FONT, M
 from ..draw import Canvas, rgb
+from ..registry import Theme
 
 
 # Departures LED band wording ("EN VOIE 1 Hades II"; idle: "QUAI LIBRE" / "aucun départ prévu")
@@ -116,3 +117,27 @@ def departures_theme(theme):
     theme["bc250_splash"].update({"STYLE": "departures", "IMAGE": "background.png", "LED": list(cfg.PROMPT_AREA),
                                   "LED_LABEL_BL": cfg.PROMPT_LABEL_BL, "LED_VALUE_BL": cfg.PROMPT_VALUE_BL})
     return theme
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_departures(title).save(out / "background.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt): amber LEDs, in French like the board."""
+    return {"CMD_WORDS": DEPARTURES_WORDS, "BRIGHT": rgb(DP["LED"]), "MID": rgb((230, 150, 40)),
+            "DIM": rgb(DP["LED_DIM"]), "AMBER": rgb((255, 120, 40)), "LABEL_COLOR": rgb(DP["LED_DIM"]),
+            "COL_WORDS": {"DONE": "FAIT", "ETA": "RESTE", "RATE": "DÉBIT", "SESSION": "TRAJET",
+                          "TIME": "TRAJET", "PEAK C/G": "PIC C/G"}}
+
+
+THEME = Theme(
+    name="departures",
+    description="a station's split-flap departures board",
+    render=render,
+    title="GARE {LOGO}",
+    status_line=status_line,
+    widgets=lambda theme, title, user: departures_theme(theme),
+    portrait_app=True,  # a layout and threads of its own
+)

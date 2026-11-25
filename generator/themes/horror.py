@@ -8,6 +8,7 @@ from PIL import Image, ImageDraw, ImageFilter
 from .. import cfg
 from ..base import CLOCK_CHARS, FONT, HEADER_BL, HEADER_H, M, S
 from ..draw import Canvas, heat_colors, rgb, text
+from ..registry import Theme
 
 
 # Horror status line wording ("YOU ARE STILL PLAYING Hades II"; idle: "NOBODY IS PLAYING" / "so who is breathing")
@@ -338,3 +339,30 @@ def horror_theme(theme, user):
     theme["bc250_splash"].update({"STYLE": "horror", "TEXT": rgb(cfg.SKIN["value"]), "RED": rgb(cfg.SKIN["alert"])})
     theme["bc250_splash"].update({k: v for k, v in horror_spec(user).items() if k in ("FEED", "STAGES", "EYES", "FIGURE", "USER")})
     return theme
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    cfg.HR_TITLE = title
+    render_background_horror(title).save(out / "background.png")
+    render_splash_horror().save(out / "splash.png")
+    hr_figure().save(out / "figure.png")
+    hr_face().save(out / "face.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt)."""
+    return {"CMD_WORDS": HORROR_WORDS, "LABEL_COLOR": rgb(cfg.SKIN["mid"]),
+            "COL_WORDS": {"SESSION": "YOU STAYED", "TIME": "YOU STAYED"}}
+
+
+THEME = Theme(
+    name="horror",
+    description="a security camera, a corridor, and what moves when the lights go out",
+    render=render,
+    title="CAM 04  SUB-LEVEL B2",
+    status_line=status_line,
+    widgets=lambda theme, title, user: horror_theme(theme, user),
+    portrait_app=True,  # a layout and threads of its own
+    app_variants=(["--no-jumpscare"],),
+)

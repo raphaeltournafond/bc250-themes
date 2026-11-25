@@ -1,6 +1,6 @@
 """Shared by the checks in this folder (each one runs in a process of its own, from the app's folder).
 
-- THEMES: every theme and its folder
+- THEMES: every theme and its folder; REGISTRY: what each declares (generator/registry.py)
 - fake_bc250(): a fake BC-250 for the sensors (sysfs, /proc, Steam, MangoHud), playing Hades II
 - LinkLcd: a screen that charges every bitmap the time a 3.5" rev A takes to receive it (measured: 160 KB/s and
   about 1.5 ms per command), and remembers what it shows
@@ -15,12 +15,11 @@ import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIXTURES = os.path.join(REPO, "tests", "fixtures")
-THEMES = {"phosphor": "BC250-Phosphor", "gameboy": "BC250-GameBoy", "retrowave": "BC250-Retrowave",
-          "videotex": "BC250-Videotex", "mission": "BC250-Mission", "minecraft": "BC250-Minecraft",
-          "nixie": "BC250-Nixie", "radar": "BC250-Radar", "halloween": "BC250-Halloween",
-          "christmas": "BC250-Christmas", "horror": "BC250-Horror",
-          "seismograph": "BC250-Seismograph", "orbit": "BC250-Orbit", "departures": "BC250-Departures",
-          "racing": "BC250-Racing"}
+sys.path.append(REPO)  # (after the app's folder: its library/ comes first)
+from generator.registry import themes  # noqa: E402
+
+REGISTRY = themes()  # every theme, as its module in generator/themes/ declares it
+THEMES = {name: theme.folder for name, theme in REGISTRY.items()}
 LINK_BYTES_PER_S = 160_000
 COMMAND_S = 0.0015
 

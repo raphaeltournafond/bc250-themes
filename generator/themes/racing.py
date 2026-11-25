@@ -3,6 +3,7 @@
 from .. import cfg
 from ..base import FONT
 from ..draw import Canvas, rgb
+from ..registry import Theme
 
 
 # Racing status line wording ("ON TRACK Hades II"; idle: "PARC FERME" / "engine off")
@@ -119,3 +120,25 @@ def racing_theme(theme):
                                   "BAND_LABEL_BL": cfg.PROMPT_LABEL_BL, "BAND_VALUE_BL": cfg.PROMPT_VALUE_BL,
                                   "START": [list(p) for p in lights], "START_R": radius, "START_PANEL": list(panel)})
     return theme
+
+
+def render(out, title, prompt, user):
+    """Its artwork, into the theme's folder out."""
+    render_background_racing(title).save(out / "background.png")
+
+
+def status_line(user):
+    """Its words and colours on the status line (Bc250Prompt)."""
+    return {"CMD_WORDS": RACING_WORDS, "LABEL_COLOR": rgb(RC["YELLOW"]),
+            "COL_WORDS": {"SESSION": "RACE", "TIME": "RACE"}}
+
+
+THEME = Theme(
+    name="racing",
+    description="a single-seater's steering wheel display, shift lights and start lights",
+    render=render,
+    title="{LOGO} RACING",
+    status_line=status_line,
+    widgets=lambda theme, title, user: racing_theme(theme),
+    portrait_app=True,  # a layout and threads of its own
+)
