@@ -9,7 +9,8 @@
 # its release was tested with. This rebuilds .venv for the Python there is now, with the newest version of each library
 # that has a ready-made package for it (the app's requirements.txt pins versions that may not exist yet for a brand new
 # Python, and Bazzite has no compiler to build them), and --run lets the app start on it. Nothing is installed
-# system-wide.
+# system-wide. Each library stays within the major version the app and these themes were made for: the next one is
+# allowed only once it has been checked (tests/check_launcher.sh, then the bound raised here).
 set -uo pipefail
 
 APP="${1:-}"
@@ -19,15 +20,20 @@ if [[ -z "$APP" || ! -f "$APP/main.py" ]]; then
   exit 2
 fi
 VENV="$APP/.venv"
-MODULES="serial yaml psutil PIL babel requests ping3 uptime numpy usb Crypto GPUtil"  # what the monitor must import
-PACKAGES="pyserial PyYAML psutil Pillow babel requests ping3 uptime numpy pyusb pycryptodome ruamel.yaml pystray"
+MODULES=(serial yaml psutil PIL babel requests ping3 uptime numpy usb Crypto GPUtil)  # what the monitor must import
+PACKAGES=(  # the app's requirements.txt, loosened to the same major versions (0.x: the same minor one)
+  "pyserial>=3.5,<4" "PyYAML>=6.0,<7" "psutil>=7.0,<8" "babel>=2.18,<3" "requests>=2.32,<3" "ping3>=5.1,<6"
+  "uptime>=3.0,<4" "pyusb>=1.3,<2" "pycryptodome>=3.23,<4" "ruamel.yaml>=0.19,<0.20" "pystray>=0.19,<0.20"
+  "numpy>=2.2,<3"
+  "Pillow>=12.2,<14"  # 13: the first with ready-made packages for Python 3.15, checked with these themes
+)
 # GPUtil (Nvidia, imported even without one) from where the app takes it: the PyPI release broke with Python 3.12
 GPUTIL="$(sed -n 's/^\(GPUtil @ [^ ;]*\).*/\1/p' "$APP/requirements.txt" 2>/dev/null | head -1)"
 GPUTIL="${GPUTIL:-GPUtil @ git+https://github.com/mathoudebine/gputil.git@1.4.1-py3.13}"
 
 log() { echo "bc250_python: $*" >&2; }
 works() { [[ -n "$1" && -x "$1" ]] && "$1" -c "import importlib, sys; [importlib.import_module(m) for m in sys.argv[1:]]" \
-          $MODULES >/dev/null 2>&1; }
+          "${MODULES[@]}" >/dev/null 2>&1; }
 
 find_python() {  # the app's venv first, then the system's Python if the libraries were installed for it
   local candidate
@@ -53,7 +59,7 @@ build_venv() {
     "$VENV/bin/python" -m pip install --quiet --disable-pip-version-check --upgrade pip || true
   fi
   # --prefer-binary: a slightly older release with a ready-made package rather than a newer one to compile
-  "$VENV/bin/python" -m pip install --quiet --disable-pip-version-check --prefer-binary $PACKAGES "$GPUTIL" \
+  "$VENV/bin/python" -m pip install --quiet --disable-pip-version-check --prefer-binary "${PACKAGES[@]}" "$GPUTIL" \
     || { log "pip could not install the libraries (see above)"; return 1; }
   works "$VENV/bin/python" || { log "the libraries are still incomplete in $VENV: $(missing "$VENV/bin/python")"; return 1; }
 }
@@ -67,7 +73,7 @@ for m in sys.argv[1:]:
         importlib.import_module(m)
     except Exception:
         gone.append(m)
-print(' '.join(gone))" $MODULES 2>&1
+print(' '.join(gone))" "${MODULES[@]}" 2>&1
 }
 
 PYTHON="$(find_python)" || { build_venv >&2 && PYTHON="$VENV/bin/python"; } || {  # (stdout: only the path)
