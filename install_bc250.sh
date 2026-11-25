@@ -75,19 +75,15 @@ if ! grep -q "sensors_bc250" "$CUSTOM"; then
   echo "Registered BC-250 sensors in sensors_custom.py"
 fi
 
-# Regenerate background + theme.yaml with your names / thresholds, using the Python that runs the monitor
-PYTHON=""
-for candidate in "$REPO/.venv/bin/python" "$REPO/venv/bin/python" python3; do
-  if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c "import PIL" 2>/dev/null; then
-    PYTHON="$candidate"
-    break
-  fi
-done
-if [[ -n "$PYTHON" ]]; then
+# Regenerate background + theme.yaml with your names / thresholds, using the Python that runs the monitor: the
+# launcher's choice, so that after an upgrade of the system's Python the app's .venv is rebuilt first rather than
+# picked with libraries it can no longer load
+if PYTHON="$(bash "$SRC/bc250_python.sh" "$REPO")"; then
   "$PYTHON" "$SRC/make_theme.py" --app "$REPO" --theme "$THEME_NAME" "${GEN_ARGS[@]}"
 else
-  echo "WARNING: no Python with Pillow found: kept the default 'steam@bc250' artwork." >&2
-  echo "         Install the monitor's requirements, then re-run this script." >&2
+  PYTHON=python3
+  echo "WARNING: no Python with the monitor's libraries (see above): kept the default 'steam@bc250' artwork." >&2
+  echo "         Fix that (network? disk space?), then re-run this script." >&2
 fi
 
 # Select the theme
@@ -108,4 +104,4 @@ echo
 echo "To start the monitor at boot: $SRC/install_autostart.sh \"$REPO\"  (once; afterwards"
 echo "  'systemctl --user restart turing-monitor' applies changes)"
 echo "Done. Restart the monitor, then run the pre-flight check from the repo folder:"
-echo "  cd \"$REPO\" && python3 bc250_check.py"
+echo "  cd \"$REPO\" && $PYTHON bc250_check.py"

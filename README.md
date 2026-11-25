@@ -436,7 +436,7 @@ What all the themes show, each in its own style (see [Themes](#themes)):
 
 | Problem | Fix |
 |---|---|
-| Something shows `--` | run `cd <app folder> && python3 bc250_check.py`: it says what's missing and how to fix it |
+| Something shows `--` | run `cd <app folder> && "$(bash bc250_python.sh .)" bc250_check.py` (the monitor's own Python): it says what's missing and how to fix it |
 | No FPS | the launch option above is missing from that game. Don't use `no_display` in it: that stops MangoHud logging |
 | Screen stuck on "Please visit www.turzx.com" | `journalctl --user -u turing-monitor -n 50` shows why the monitor isn't running |
 | "Python 3.15 is not supported by this program" after a Bazzite update | update and re-run setup once: `git -C bc250-themes pull && bash bc250-themes/setup.sh`. Since then the service starts the monitor through `bc250_python.sh`. It rebuilds the app's `.venv` for the new Python, with libraries that have ready-made packages for it (this needs the network once). It also lets the app run on a Python newer than its release was tested with, and says so in the log. To start the monitor by hand: `bash <app folder>/bc250_python.sh <app folder> --run` |
@@ -488,10 +488,10 @@ It fetches turing-smart-screen-python 3.10.0 into `tests/.cache` and runs it on 
 | `check_boot.py` | each boot animation is pixel-exact on the screen, short enough, and hands over cleanly to the dashboard |
 | `check_app.py` | the whole app: the screen shows what every widget meant to draw, with one full-screen transfer only, and the radar's sweep never stalls |
 
-On GitHub, `tests/run.py` runs on Python 3.12, 3.14 and 3.15 (Bazzite moves to each new Python soon after it comes out). A second job lints the shell scripts with `shellcheck` and runs `tests/check_launcher.sh python3.14 python3.15` (Linux only, it installs the real libraries). That script takes `bc250_python.sh` through what an upgrade of the system's Python does to the monitor:
-- the app's `.venv` left with the old version's libraries is rebuilt;
+On GitHub, `tests/run.py` runs on Python 3.12, 3.14 and 3.15 (Bazzite moves to each new Python soon after it comes out). A second job lints the shell scripts with `shellcheck` and runs `tests/check_launcher.sh python3.14 python3.15` (Linux only, it installs the real libraries). That script takes `bc250_python.sh` through what an upgrade of the system's Python does to the monitor, with the real app:
+- the app's `.venv` left with the old version's libraries is rebuilt, by `install_bc250.sh` before it generates the theme;
 - a missing library is installed into `.venv` without rebuilding it;
-- `--run` starts an app release that refuses the new Python.
+- `--run` starts an app release that refuses the new Python, and the app keeps running with the theme.
 
 After changing a theme, `python tools/make_previews.py THEME` regenerates its committed files and the README previews (recorded on the same emulated screen, so the GIFs play at the real speed). The radar's tests use saved data around Paris CDG (`tests/fixtures`), never the network.
 
