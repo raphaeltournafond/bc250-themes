@@ -18,8 +18,10 @@ os.makedirs(os.path.join(steam, "steamapps"))
 os.makedirs(os.path.join(steam, "logs"))
 os.environ["BC250_PROC_ROOT"] = proc
 import library.sensors.sensors_bc250 as b
+import library.sensors.bc250.base as base  # (where the paths are read from)
+import library.sensors.bc250.steam as b_steam
 
-b.PROC_ROOT = proc
+base.PROC_ROOT = proc
 b._steam_roots_cache.fn = lambda: [steam]
 b._steam_libraries_cache.fn = lambda: [steam]
 clock = [10_000.0]
@@ -119,7 +121,7 @@ print("PASS states: sessions", flush=True)
 
 # ---------------------------------------------------------------- downloads
 rx = [5_000_000_000]
-b._network_rx = lambda: rx[0]
+b_steam._network_rx = lambda: rx[0]
 D = b._Downloads
 manifest("2358720", "Black Myth: Wukong", flags=1026, to_dl=100_000_000_000, dl=20_000_000_000)
 log("AppID 2358720 state changed : Update Required,Update Queued,",
@@ -202,7 +204,7 @@ def board(threads, freq_mhz):
         f.write(f"{freq_mhz * 1_000_000}\n")
 
 
-b.SYSFS_ROOT = sysfs
+base.SYSFS_ROOT = sysfs
 b._AmdGpu._searched, b._AmdGpu.device, b._AmdGpu.hwmon = True, os.path.join(sysfs, "gpu"), hwmon
 board(12, 80)
 assert b.gpu_clock_mhz() == 80, "stock: unchanged, even low"

@@ -453,8 +453,10 @@ What all the themes show, each in its own style (see [Themes](#themes)):
 | `install_autostart.sh` | the systemd user service (also `--remove`) |
 | `bc250_python.sh` | the Python the monitor runs with: rebuilds the app's `.venv` after an upgrade of the system's Python, and starts the monitor for the service |
 | `bc250_check.py` | read-only health check of every data source |
-| `library/sensors/sensors_bc250.py` | the data the app can't read on a BC-250, plus the self-drawn widgets and the boot animations |
-| `make_theme.py` | generates a theme's `theme.yaml` and artwork: colours in `SKINS`, every position in `set_layout()` (one block per theme and orientation), the artwork in `render_*()` |
+| `library/sensors/bc250/` | the data the app can't read on a BC-250 (`hardware.py`, `steam.py`), the self-drawn widgets, the boot (`splash.py`), and one module per theme with its own widgets and boot animation (`themes/`) |
+| `library/sensors/sensors_bc250.py` | the app's way in to that package: `sensors_custom.py` imports it, and each `theme.yaml` names its widgets |
+| `make_theme.py` | generates a theme's `theme.yaml` and artwork (its command line; the code is in `generator/`) |
+| `generator/` | colours in `base.py` (`SKINS`), the options and every position in `cfg.py` (`set_layout()`, one block per theme and orientation), `theme.yaml` in `build.py`, and each theme's artwork in `themes/<theme>.py` (`render_*()`) |
 | `res/themes/BC250-*` | each theme's default files and previews |
 
 Why the custom sensors:

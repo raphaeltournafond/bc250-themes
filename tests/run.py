@@ -28,7 +28,11 @@ def prepare_app(path):
     if not os.path.isfile(os.path.join(path, "main.py")):
         print(f"Fetching turing-smart-screen-python {APP_RELEASE} into {path}", flush=True)
         subprocess.run(["git", "-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1", "--branch", APP_RELEASE, APP_URL, path], check=True)
-    shutil.copy(os.path.join(REPO, "library", "sensors", "sensors_bc250.py"), os.path.join(path, "library", "sensors"))
+    sensors = os.path.join(path, "library", "sensors")
+    shutil.copy(os.path.join(REPO, "library", "sensors", "sensors_bc250.py"), sensors)
+    shutil.rmtree(os.path.join(sensors, "bc250"), ignore_errors=True)  # (no module left from before)
+    shutil.copytree(os.path.join(REPO, "library", "sensors", "bc250"), os.path.join(sensors, "bc250"),
+                    ignore=shutil.ignore_patterns("__pycache__"))
     shutil.copy(os.path.join(REPO, "bc250_check.py"), path)
     custom = os.path.join(path, "library", "sensors", "sensors_custom.py")
     with open(custom, encoding="utf-8") as f:

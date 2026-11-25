@@ -64,7 +64,8 @@ case "$THEME_NAME" in
 esac
 
 for theme in "$SRC"/res/themes/BC250-*; do cp -r "$theme" "$REPO/res/themes/"; done
-cp "$SRC/library/sensors/sensors_bc250.py" "$REPO/library/sensors/"
+rm -rf "$REPO/library/sensors/bc250"  # (no module left from an older version)
+cp -r "$SRC/library/sensors/bc250" "$SRC/library/sensors/sensors_bc250.py" "$REPO/library/sensors/"
 cp "$SRC/bc250_check.py" "$SRC/bc250_python.sh" "$REPO/"
 echo "Copied themes, sensors, bc250_check.py and bc250_python.sh"
 
