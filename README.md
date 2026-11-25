@@ -495,6 +495,12 @@ On GitHub, `tests/run.py` runs on Python 3.12, 3.14 and 3.15 (Bazzite moves to e
 - a missing library is installed into `.venv` without rebuilding it;
 - `--run` starts an app release that refuses the new Python, and the app keeps running with the theme.
 
+The same checks also run every Monday without a push, so a new Python patch release or library version is tested before the BC-250 gets it. Two more jobs then look ahead:
+- **next Python**: the coming Python in preview, with ready-made packages only for the compiled libraries (Bazzite has no compiler). It only warns, on the run's page, until those packages exist.
+- **newest libraries**: every library at its newest release, beyond the bounds of `tests/requirements.txt` and `bc250_python.sh`. When it passes with a new major version, the bounds can be raised; when it fails, GitHub sends an e-mail, and the bounds keep the monitor safe meanwhile.
+
+The run's summary lists the versions each job got. GitHub turns weekly runs off after 60 days without a commit; *Actions > tests > Enable workflow* turns them back on.
+
 ### Adding a theme
 
 A theme is declared once, at the end of its generator module, and everything else reads that declaration (`generator/registry.py`): `make_theme.py --theme`, `theme.yaml`, the checks and the previews. `install_bc250.sh` takes its name from its folder in `res/themes`. A new theme needs:

@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  schedule:
+    # every Monday, even without a push: a new Python patch release or library version is tested before the BC-250
+    # gets it, and the "ahead" job below looks at what comes next
+    - cron: "17 5 * * 1"
 
 jobs:
   themes:
@@ -46,6 +50,62 @@ jobs:
             3.15
           allow-prereleases: true
       - name: Lint the shell scripts
-        run: shellcheck --severity=warning *.sh tests/*.sh
+        run: shellcheck --severity=warning ./*.sh tests/*.sh
       - name: Upgrade from 3.14 to 3.15 under the monitor
         run: bash tests/check_launcher.sh python3.14 python3.15
+
+  ahead:
+    # weekly (and by hand): what Bazzite may move to next, before it does
+    # - the next Python, still in preview, with the libraries as they are released for it (only ready-made packages
+    #   for the compiled ones: Bazzite has no compiler to build them). Expected to fail until they exist, so it only
+    #   warns: the run's page shows it, no e-mail
+    # - the newest release of every library, beyond the bounds of tests/requirements.txt and bc250_python.sh: when it
+    #   passes with a new major version (Pillow 14, numpy 3...), the bounds can be raised; when it fails, they keep the
+    #   monitor safe, and this says why
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    name: ahead (${{ matrix.what }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    continue-on-error: ${{ matrix.warn_only }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - what: next Python
+            python: "3.16"
+            newest: false
+            warn_only: true
+          - what: newest libraries
+            python: "3.15"
+            newest: true
+            warn_only: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+      - name: Install the libraries
+        env:
+          NEWEST: ${{ matrix.newest }}
+        run: |
+          if [[ "$NEWEST" == true ]]; then
+            # every library of tests/requirements.txt without its version bounds
+            sed -E 's/#.*//; s/[[:space:]]*[~<>=!;].*//' tests/requirements.txt | grep . > "$RUNNER_TEMP/newest.txt"
+            pip install --upgrade -r "$RUNNER_TEMP/newest.txt"
+          else
+            pip install --only-binary Pillow,numpy,psutil,pycryptodome -r tests/requirements.txt
+          fi
+          {
+            echo "### Python $(python -c 'import sys; print(sys.version.split()[0])')"
+            echo '```'
+            pip list 2>/dev/null | grep -iE "^(pillow|numpy|psutil|pyyaml|pycryptodome|requests|babel|pyserial|pyusb) "
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep the app checkout between runs
+        uses: actions/cache@v4
+        with:
+          path: tests/.cache/turing-smart-screen-python
+          key: turing-smart-screen-python-3.10.0
+      - name: Run every check
+        run: python tests/run.py
